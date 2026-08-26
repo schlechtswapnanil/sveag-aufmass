@@ -94,9 +94,24 @@ def main():
     print(f"Arbeitsflaeche (Flurstueck ohne Gebaeude): "
           f"{work.sum()*frame.m_per_px_x*frame.m_per_px_y:.0f} m²")
 
-    paved, veg = M.paved_mask(rgb, work)
+    paved, veg, info = M.paved_mask(rgb, work)
     paved = M.clean(paved, frame.m_per_px)
 
+    # Plausibilitaet vor Klassifikation: lieber nichts melden als etwas
+    # Falsches. Was hier durchfaellt, muss von Hand gemessen werden - das
+    # steht so auch im Ergebnis, damit es niemand uebersieht.
+    work_m2 = work.sum() * frame.m_per_px_x * frame.m_per_px_y
+    paved_m2 = paved.sum() * frame.m_per_px_x * frame.m_per_px_y
+    anteil = paved_m2 / work_m2 if work_m2 > 0 else 0.0
+    unplausibel = anteil > M.MAX_BELAGSANTEIL
+    print(f"Befestigt erkannt: {paved_m2:.0f} m² = {anteil*100:.0f} % der Arbeitsflaeche")
+    if unplausibel:
+        print(f"! Ueber {M.MAX_BELAGSANTEIL*100:.0f} % - das ist keine Wegeflaeche, sondern eine")
+        print("  fehlgeschlagene Unterscheidung. Kein Ergebnis, bitte von Hand messen.")
+        paved = np.zeros_like(paved)
+    if info.get('guete') is not None:
+        lage = 'trennbar' if info['schwelle'] else 'einheitlich - keine Flaeche gemeldet'
+        print(f"Trennschaerfe: {info['guete']:.2f} ({lage})")
     labels, n = ndimage.label(paved)
     results = []
     for i in range(1, n + 1):
@@ -117,7 +132,12 @@ def main():
     out.with_suffix(".json").write_text(json.dumps({
         "lat": args.lat, "lon": args.lon, "bundesland": args.state,
         "source": "luftbild-ki", "mPerPx": frame.m_per_px,
-        "parcelM2": round(parcel_m2), "sectors": results,
+        "parcelM2": round(parcel_m2), "workM2": round(work_m2),
+        "pavedShare": round(anteil, 3),
+        "reliable": not unplausibel,
+        "note": None if not unplausibel else
+                "Belagsanteil unplausibel - Unterscheidung fehlgeschlagen, von Hand messen",
+        "sectors": results,
     }, indent=2, ensure_ascii=False))
 
     # --- Kontrollbild ---

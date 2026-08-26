@@ -97,6 +97,42 @@ Bundle):
 `parcel-query.js` prüft beides schon gegen und meldet `truncated: true`, wenn
 die heutige Abfrage danebengegriffen hätte.
 
+## Was verworfen wird
+
+Zwei Fehlgriffe kamen aus derselben Ursache: die Erkennung unterschied nicht
+zwischen Belag und nacktem Winterboden und meldete trotzdem eine Zahl.
+
+**Ein Parkplatz braucht eine Straßenanbindung.** `parkplatz` wurde früher
+allein nach Größe und Breite vergeben — ohne jeden Ankerpunkt. Ein Leipziger
+Hinterhof wurde so zu 103 m² Stellfläche. Ein Auto muss hinkommen können.
+
+**Ein Weg ist nicht die halbe Parzelle.** Kommt die Erkennung auf mehr als
+**40 %** der Arbeitsfläche, ist das keine Wegefläche, sondern eine
+fehlgeschlagene Unterscheidung. Dann liefert `run.py` `reliable: false` und
+**kein** Ergebnis.
+
+| Fall | Anteil | Ergebnis |
+|---|---:|---|
+| Coesfeld, Einfamilienhaus | 13 % | Einfahrt 44 m² — brauchbar |
+| Heschredder, Wohnanlage HH | 16 % | Einfahrt 46 m², Zuwegung 46 m² — teils brauchbar |
+| Erdkampsweg / Herrnhuter / Flemmingstraße | 2–7 % | nur `sonstiges`, nichts Verwertbares |
+| Theodor-Neubauer, Hinterhof | **49 %** | **verworfen** |
+
+Die Grenze ist bewusst grob. Sie fängt den offensichtlichen Fehlgriff ab, nicht
+den knappen Fall.
+
+## Was nicht half
+
+Eine **adaptive Helligkeitsschwelle** (Otsu über die Arbeitsfläche, mit einer
+Prüfung auf Trennschärfe) räumte an Mehrfamilienhäusern das Rauschen weg —
+zerlegte aber die einzige sauber erkannte Einfahrt von 44 m² auf 16 m² in zwei
+Stücke. An fünf Fällen eine Schwelle zu justieren, die 0,54 von 0,60 trennt,
+wäre Anpassung an die Stichprobe, keine Verbesserung.
+
+Der Code steht noch da (`paved_mask(..., adaptive=True)`), der Trennschärfe-Wert
+wird berechnet und gemeldet, benutzt wird er nicht. Mit mehr Vergleichsfällen
+lohnt ein zweiter Blick.
+
 ## Grenzen
 
 - **Nur 9 Bundesländer** haben Luftbild *und* Flurstück offen: BW, BB, HH, MV,
@@ -107,6 +143,10 @@ die heutige Abfrage danebengegriffen hätte.
 - **Der Geocoder trifft die Hausmitte, nicht das Grundstück.** Liegt der Punkt
   im Nachbargebäude, ist das Flurstück falsch — und der Fehler ist von hier
   aus nicht erkennbar. Deshalb bricht `run.py` ab, statt zu raten.
+- **Mehrfamilienhäuser bleiben schwach.** Von sechs geprüften Objekten liefert
+  eines (Einfamilienhaus) ein sauberes Ergebnis, eines (Wohnanlage) ein
+  teilweise brauchbares, drei nichts Verwertbares, eines wird verworfen. Für
+  Wohnanlagen ist das kein Messverfahren, sondern bestenfalls ein Hinweis.
 - **Kein Freigabe-Ersatz.** Alles hier ist `isAssumption: true`. Die Schwellen
   sind an NRW-Winterbildern kalibriert; andere Länder und Jahreszeiten
   brauchen eigene Werte.

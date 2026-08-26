@@ -188,8 +188,19 @@ python3 cv/run.py --lat 51.893162 --lon 7.191551 \
   --state Nordrhein-Westfalen --out /tmp/haus
 ```
 
-Expect a driveway at roughly 18 m / 2.4 m wide, classified `garage`. Open
-`/tmp/haus.debug.png` and look: does the coloured line lie on the driveway?
+Expect a driveway at roughly 18 m / 2.4 m wide, classified `garage`, and
+`"reliable": true` with a paved share around 13 %. Open `/tmp/haus.debug.png`
+and look: does the coloured line lie on the driveway?
+
+Then a case that **must be rejected** — a Leipzig rear courtyard:
+
+```bash
+python3 cv/run.py --lat 51.335595 --lon 12.415029 --state Sachsen --out /tmp/hof
+```
+
+It has to print `Belagsanteil unplausibel` and write `"reliable": false` with
+no sectors. Before the check it reported 103 m² of "parking" in a yard of bare
+winter soil.
 
 Then try **an address you have already measured by hand** and compare. That
 comparison has not been done — until it has, the numbers are plausible, not
@@ -199,6 +210,19 @@ Only 9 Bundesländer have both services: BW, BB, HH, MV, NI, NRW, SL, SN, RP.
 Elsewhere `run.py` stops instead of guessing.
 
 ---
+
+## 6b. Geocoding a long object list
+
+```bash
+node src/cli.js prepare work/kunde.brief.json --source work/kunde.source.txt \
+  -o work/kunde.import.json --cache work/geocode-cache.json
+```
+
+Run it once, then again. The second run must report *(N aus dem
+Zwischenspeicher)* and finish in seconds without a single request.
+
+The cache is written **during** the run, not at the end — kill it halfway and
+restart, and it must pick up where it stopped.
 
 ## 7. Known-bad cases — expected to fail
 
@@ -216,3 +240,9 @@ These are limits, not regressions:
 - **Parcel truncation.** The tool's own `count: '5'` can pick a neighbour's
   plot in terraced housing (128 m instead of 35 m in Bocholt). Not fixable
   without the source repo — see `cv/README.md`.
+- **Apartment blocks.** Of six objects tested, one detached house measures
+  cleanly, one estate partly, three yield nothing usable and one is rejected.
+  For Wohnanlagen this is a hint, not a measurement.
+- **Broken addresses in an object list.** `04315 Leipziig`,
+  `August-Bebel-Strße`, `Ahornweg 2-10/ Am Eichenbogen 23-25` resolve with
+  neither provider. They are listed individually and go in by hand.

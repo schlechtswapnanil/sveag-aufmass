@@ -70,8 +70,57 @@ class Frame:
 
 # --- Schritt 2: befestigte Flaeche ---------------------------------------
 
+def _otsu(values):
+    """Otsu-Schwelle und ein Mass fuer die Trennschaerfe.
+
+    Gibt (schwelle, guete) zurueck. `guete` ist die Zwischenklassen-Varianz
+    geteilt durch die Gesamtvarianz - also der Anteil der Streuung, den die
+    Trennung ueberhaupt erklaert. Bei einer einheitlichen Flaeche (Hof nur aus
+    nacktem Winterboden) liegt der Wert niedrig: es gibt dort schlicht nichts
+    zu trennen.
+    """
+    v = values[np.isfinite(values)]
+    if v.size < 100:
+        return None, 0.0
+    hist, kanten = np.histogram(v, bins=64)
+    mitte = (kanten[:-1] + kanten[1:]) / 2
+    w = hist.astype(np.float64)
+    gesamt = w.sum()
+    if gesamt == 0:
+        return None, 0.0
+    p = w / gesamt
+    w0 = np.cumsum(p)
+    m0 = np.cumsum(p * mitte)
+    mg = m0[-1]
+    with np.errstate(divide="ignore", invalid="ignore"):
+        zwischen = (mg * w0 - m0) ** 2 / (w0 * (1 - w0))
+    zwischen = np.nan_to_num(zwischen)
+    i = int(np.argmax(zwischen))
+    gesamtvarianz = float(np.sum(p * (mitte - mg) ** 2))
+    guete = float(zwischen[i] / gesamtvarianz) if gesamtvarianz > 0 else 0.0
+    return float(mitte[i]), guete
+
+
+# Ab hier gilt eine Flaeche als trennbar. Darunter ist der Ausschnitt
+# einheitlich und jede Schwelle wuerde eine Grenze erfinden, die es nicht gibt.
+MIN_TRENNSCHAERFE = 0.45
+
+# Anteil der Arbeitsflaeche, ab dem das Ergebnis verworfen wird.
+#
+# Wege, Einfahrten und Stellflaechen machen einen Teil eines Grundstuecks aus,
+# nicht die Haelfte. Kommt die Erkennung auf mehr, hat sie nicht Belag
+# gefunden, sondern nicht zwischen Belag und Untergrund unterschieden - im
+# Leipziger Testfall ein Hinterhof aus nacktem Winterboden, 103 von 211 m².
+# Zum Vergleich: die sauber erkannte Einfahrt in Coesfeld sind 44 von 368 m²,
+# also 12 %.
+#
+# Die Grenze ist bewusst grosszuegig. Sie soll den offensichtlichen Fehlgriff
+# abfangen, nicht den knappen Fall entscheiden.
+MAX_BELAGSANTEIL = 0.40
+
+
 def paved_mask(rgb, work, veg_thresh=14.0, sat_thresh=0.26,
-               bright_thresh=0.80, texture_thresh=9.0):
+               bright_thresh=0.80, texture_thresh=9.0, adaptive=False):
     """Befestigte Flaeche innerhalb der Arbeitsflaeche.
 
     Drei Merkmale, weil keines allein traegt (Messwerte im README):
@@ -87,8 +136,20 @@ def paved_mask(rgb, work, veg_thresh=14.0, sat_thresh=0.26,
       nicht. Trennt Winterboden (~11) von Gehweg (~5).
 
     Daecher sind hell UND glatt und wuerden durchrutschen - sie sind aber
-    ueber den OSM-Grundriss schon aus `work` entfernt. Ohne diese Maske
-    traegt das Verfahren nicht.
+    ueber den OSM-Grundriss schon aus `work` entfernt.
+
+    `adaptive` bestimmt die Helligkeitsschwelle aus dem Ausschnitt selbst statt
+    fest vorgegeben. Standardmaessig **aus**: an fuenf Testfaellen raeumte das
+    zwar das Rauschen an Mehrfamilienhaeusern weg, zerlegte aber die einzige
+    sauber erkannte Einfahrt von 43 m² auf 16 m² in zwei Stuecke. Eine Schwelle
+    auf fuenf Faellen zu justieren waere Anpassung an die Stichprobe, keine
+    Verbesserung - der Wert wird berechnet und gemeldet, aber nicht benutzt.
+    Historisch: Das ist noetig, weil feste Werte an einem
+    Einfamilienhaus passen und an einem Hinterhof nicht: dort hat eine feste
+    Schwelle nackten Winterboden als Belag ausgegeben (102 m² "Parkplatz" im
+    Leipziger Testfall). Laesst sich der Ausschnitt nicht sinnvoll trennen,
+    liefert die Funktion eine leere Maske - keine Flaeche ist ein Ergebnis,
+    eine erfundene nicht.
     """
     a = rgb.astype(np.float32)
     R, G, B = a[..., 0], a[..., 1], a[..., 2]
@@ -103,9 +164,22 @@ def paved_mask(rgb, work, veg_thresh=14.0, sat_thresh=0.26,
     texture = np.sqrt(np.maximum(ndimage.uniform_filter(gray ** 2, 9) - mu ** 2, 0))
 
     veg = (2 * G - R - B) / np.maximum(illum, 1.0) * 128.0 > veg_thresh
-    paved = (work & ~veg & (S < sat_thresh)
-             & (Vn > bright_thresh) & (texture < texture_thresh))
-    return paved, veg
+    kandidat = work & ~veg & (S < sat_thresh)
+
+    schwelle = bright_thresh
+    guete = None
+    if kandidat.sum() > 500:
+        otsu_schwelle, guete = _otsu(Vn[kandidat])
+        if adaptive:
+            if otsu_schwelle is None or guete < MIN_TRENNSCHAERFE:
+                # Einheitlicher Ausschnitt: nichts zu trennen, also nichts melden.
+                return np.zeros_like(work), veg, {"schwelle": None, "guete": guete}
+            # Die feste Schwelle bleibt Untergrenze: ein durchgehend dunkler Hof
+            # soll nicht dadurch zu Belag werden, dass er in sich Kontrast hat.
+            schwelle = max(otsu_schwelle, bright_thresh)
+
+    paved = kandidat & (Vn > schwelle) & (texture < texture_thresh)
+    return paved, veg, {"schwelle": schwelle, "guete": guete}
 
 
 def clean(mask, m_per_px, min_area_m2=4.0, close_m=0.5):
@@ -235,8 +309,12 @@ def classify(component, frame, anchors):
         cat = "garage"          # Einfahrt: von der Strasse her, fahrzeugbreit
     elif at_street and at_house:
         cat = "haustuer"        # schmale Verbindung Strasse -> Haus
-    elif area_m2 >= 20 and length_m > 0 and width_m >= 3.5:
-        cat = "parkplatz"       # grosse zusammenhaengende Flaeche
+    elif at_street and area_m2 >= 20 and width_m >= 3.5:
+        # Stellflaeche - aber nur, wenn sie von der Strasse aus erreichbar
+        # ist. Ohne diese Bedingung wurde jede groessere zusammenhaengende
+        # Flaeche zum Parkplatz, auch ein Hinterhof aus nacktem Winterboden
+        # (102 m² im Leipziger Testfall). Ein Auto muss hinkommen koennen.
+        cat = "parkplatz"
     elif at_house:
         cat = "haustuer"
     else:

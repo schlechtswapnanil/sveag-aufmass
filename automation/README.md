@@ -186,6 +186,30 @@ lässt in dichter Bebauung das richtige Flurstück aus der Antwort fallen, und
 das Tool misst dann stillschweigend die Front der Nachbarn. In zwei von fünf
 geprüften NRW-Adressen trat das auf, einmal mit 128 m statt 35 m.
 
+## Geocoding bei Objektlisten
+
+Zwei Anbieter hintereinander: **Photon**, bei Ausfall **Nominatim**. Dazu ein
+Zwischenspeicher neben der Ausgabedatei (`--cache`).
+
+Das ist kein Luxus. Bei einer Anfrage über 95 Leipziger Objekte sperrte Photon
+nach etwa 55 Adressen — und zwar still, jeder einzelne Fehlschlag sah harmlos
+aus. 41 Objekte fehlten einfach. Mit Ausweichanbieter wurden daraus **85 von 95**.
+
+Drei Vorkehrungen, jede aus einem tatsächlichen Fehlschlag:
+
+* **Ausfallsicherung**: nach drei Fehlschlägen in Folge wird ein Anbieter für
+  den Rest des Laufs übersprungen. Sonst kostet jede weitere Adresse erst
+  Wiederholungen samt Wartezeit — bei 95 Adressen Minuten Leerlauf.
+* **Zwischenspeichern während des Laufs**, nicht erst am Ende. Ein Lauf wurde
+  nach neun Minuten abgebrochen und hatte jeden Abruf verloren.
+* **Erst daneben schreiben, dann umbenennen** — ein Abbruch mittendrin darf
+  keine halbe Datei hinterlassen.
+
+Die restlichen 10 Adressen scheitern an der Objektliste selbst, nicht am
+Dienst: `04315 Leipziig`, `August-Bebel-Strße`, `TEG Garagenhof Nord Mölkau`,
+`Ahornweg 2-10/ Am Eichenbogen 23-25`. Tippfehler, Sammelbezeichnungen, zwei
+Straßen in einer Zelle. Die gehören von Hand nachgetragen.
+
 ## Anhänge und Objektlisten
 
 Ein Anhang zählt nur, wenn sein Inhalt im Quelltext steht — sonst lässt sich

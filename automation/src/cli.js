@@ -24,20 +24,22 @@
 //           taugt zum Selbstnachsehen, nicht zum Verschicken.
 
 const fs = require('node:fs');
+const path = require('node:path');
 const { validateBrief, classifyTier, TIER_LABEL } = require('./brief.js');
 const { briefToImportFile, allAddresses, geocodeQuery, categoriesToMeasure } = require('./to-aufmass.js');
-const { geocode } = require('./geocode.js');
+const { geocode, Cache } = require('./geocode.js');
 const { sheetRows, toCsv, fromCsv, mergeRows, COLUMNS } = require('./to-sheet.js');
 
 function parseArgs(argv) {
   const [command, briefPath, ...rest] = argv;
-  const opts = { command, briefPath, email: null, out: null, images: null, imageMap: null, append: null };
+  const opts = { command, briefPath, email: null, out: null, images: null, imageMap: null, append: null, cache: null };
   for (let i = 0; i < rest.length; i++) {
     if (rest[i] === '--source' || rest[i] === '--email') opts.email = rest[++i];
     else if (rest[i] === '-o' || rest[i] === '--out') opts.out = rest[++i];
     else if (rest[i] === '--images') opts.images = rest[++i];
     else if (rest[i] === '--image-map') opts.imageMap = rest[++i];
     else if (rest[i] === '--append') opts.append = rest[++i];
+    else if (rest[i] === '--cache') opts.cache = rest[++i];
     else throw new Error(`Unbekannte Option: ${rest[i]}`);
   }
   return opts;
@@ -166,6 +168,11 @@ async function main() {
   // Bei einer Objektliste (Portfolio-Anfrage) darf eine unauffindbare Adresse
   // nicht die ganze Vorbereitung kippen. Fehlschlaege werden gesammelt und am
   // Ende benannt - uebersprungen, aber nicht verschwiegen.
+  // Zwischenspeicher neben der Ausgabedatei, sonst im Arbeitsverzeichnis.
+  // Ein zweiter Lauf ueber dieselbe Liste kostet damit keinen einzigen Aufruf.
+  const cache = new Cache(opts.cache || path.join(path.dirname(opts.out || '.'), 'geocode-cache.json'));
+  const vorher = cache.size;
+
   const geos = [];
   const failures = [];
   const leise = queries.length > 5;
@@ -177,7 +184,7 @@ async function main() {
     const query = geocodeQuery(brief, address);
     let geo = null;
     try {
-      geo = await geocode(query);
+      geo = await geocode(query, { cache });
     } catch (err) {
       failures.push(`${address}: ${err.message}`);
       continue;
@@ -213,7 +220,8 @@ async function main() {
       warnungen.push(`Strassenname fehlt im Treffer: "${address}" -> "${geo.label}"`);
     }
     if (!leise) {
-      console.error(`  Adresse: ${geo.label} (${geo.lat.toFixed(5)}, ${geo.lon.toFixed(5)}) · ${geo.state || 'Bundesland unbekannt'}`);
+      console.error(`  Adresse: ${geo.label} (${geo.lat.toFixed(5)}, ${geo.lon.toFixed(5)}) · ${geo.state || 'Bundesland unbekannt'}` +
+        (geo.cached ? ' · zwischengespeichert' : ` · ${geo.provider}`));
       for (const w of warnungen) console.error(`  ! ${w}`);
     } else if (warnungen.length) {
       console.error(`  ! ${address} → ${warnungen.join('; ')}`);
@@ -222,7 +230,12 @@ async function main() {
     if (leise && (i + 1) % 25 === 0) console.error(`  … ${i + 1}/${queries.length}`);
   }
 
-  if (leise) console.error(`  ${geos.length} von ${queries.length} Adressen geocodiert.`);
+  cache.save();
+  if (leise) {
+    const neu = cache.size - vorher;
+    console.error(`  ${geos.length} von ${queries.length} Adressen geocodiert` +
+      (neu < queries.length ? ` (${queries.length - neu} aus dem Zwischenspeicher)` : '') + '.');
+  }
   if (failures.length) {
     console.error(`  ! ${failures.length} Adresse(n) ohne Objekt - im Tool von Hand anlegen:`);
     for (const f of failures) console.error(`      ${f}`);
