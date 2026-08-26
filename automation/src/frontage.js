@@ -13,6 +13,25 @@ const { extractFrontage } = require('../vendor/parcel.js');
 // Ausgangswerte des Tools waren {15, 30, 3}. Auf der Testhaelfte:
 //   Median-Abweichung 4,5 m -> 1,9 m, innerhalb ±20 % 54 % -> 58 %.
 // Ueber den gesamten Datensatz 55 % -> 64 % innerhalb ±20 %.
+//
+// Die Aufmassblaetter der SVEAG (86 PDFs, jede Strecke einzeln beschriftet)
+// erlauben eine schaerfere Aussage. Ein Gehweg besteht dort entweder aus
+// EINER Strecke an der Strasse - dafuer ist dieses Verfahren gebaut - oder
+// aus mehreren, weil zusaetzlich ein privater Zuweg geraeumt wird:
+//
+//   eine Teilstrecke   (48 Objekte)  Median-Abweichung 1,1 m,  77 % in ±20 %
+//   mehrere Strecken   ( 5 Objekte)  Median-Abweichung 35,8 m,  0 % in ±20 %
+//
+// Der Zuweg liegt weder auf einer Flurstuecks- noch auf einer Gebaeudekante;
+// aus Vektordaten ist er nicht herzuleiten. Und er ist vorher nicht
+// erkennbar: der Abstand des Gebaeudes zur Strasse trennt die beiden Gruppen
+// nicht (Median 10,9 m gegen 12,8 m, jede Schwelle erzeugt mehr Fehlalarme
+// als Treffer). Rund ein Siebtel der Objekte wird deshalb zu niedrig
+// geschaetzt, und nur der Blick aufs Kontrollbild faengt das ab.
+//
+// Gegenprobe: dieselbe Rastersuche allein auf den einteiligen Gehwegen
+// liefert genau dieselben drei Zahlen. Die Parameter haengen also nicht an
+// den Mehrteilern in der Stichprobe.
 const FITTED = { maxDistM: 10, maxAngleDeg: 50, minLenM: 8 };
 
 // Der engere Zuschnitt laesst kurze Fronten ganz wegfallen: 7 von 76 Adressen

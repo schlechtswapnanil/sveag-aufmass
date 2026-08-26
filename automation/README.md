@@ -150,6 +150,9 @@ zwischen Straße und PLZ ist kein Betrug). Eine gedrehte Hausnummer fällt auf.
 | `prompts/parse-email.md` | die Extraktionsanweisung fürs Modell |
 | `src/vocabulary.js` | Kundenbegriffe → die fünf Tool-Kategorien |
 | `tools/xlsx-to-text.py` | Excel-Anhang → Quelltext (Objektlisten) |
+| `tools/pdf-text.py` | Text aus einem Aufmaßblatt, ohne externe Bibliothek |
+| `tools/pdf-lines.py` | Einzelstrecken aus den Aufmaßblättern |
+| `tools/fit.js` | Parameter an Handmessungen ausrichten (Train/Test) |
 | `src/brief.js` | Tier-Einstufung, Beleg- und Konsistenzprüfung |
 | `src/schema-check.js` | schlanker Schema-Validator (statt ajv, damit dependency-frei) |
 | `src/to-aufmass.js` | Brief → Objekt im Format von `importJson()` des Tools |
@@ -305,6 +308,33 @@ nicht zu holen.
 
 Über den gesamten Datensatz: Median-Abweichung **2,0 m** (9 %), 65 % innerhalb
 ±20 %, 80 % innerhalb ±50 %.
+
+### Wo es gut geht und wo nicht
+
+Die Aufmaßblätter der SVEAG (86 PDFs) beschriften jede Strecke einzeln.
+Damit lässt sich sagen, woraus ein Gehweg besteht — und die Zahl oben zerfällt
+in zwei sehr verschiedene Fälle:
+
+| | Objekte | Median-Abweichung | ±20 % |
+|---|---:|---:|---:|
+| Gehweg ist **eine** Strecke an der Straße | 48 | **1,1 m** (7 %) | **77 %** |
+| Gehweg besteht aus **mehreren** Strecken | 5 | 35,8 m (61 %) | 0 % |
+
+Der zweite Fall ist ein privater **Zuweg**, der zusätzlich geräumt wird — bei
+Nikischstraße 6 sind das 35 m quer über das Grundstück, gegen 14 m an der
+Straße. Der liegt weder auf einer Flurstücks- noch auf einer Gebäudekante und
+ist aus Vektordaten grundsätzlich nicht herzuleiten.
+
+Schlimmer: er ist **vorher nicht erkennbar**. Der Abstand des Gebäudes zur
+Straße trennt die beiden Gruppen nicht (Median 10,9 m gegen 12,8 m); jede
+Schwelle produziert mehr Fehlalarme als Treffer. Rund ein Siebtel der Objekte
+wird deshalb zu niedrig geschätzt, ohne dass das Verfahren es merkt.
+
+Deshalb steht jede Zeile auf `zu pruefen` und trägt einen Bildlink: wer das
+Grundstück ansieht, erkennt den Zuweg sofort. Das Verfahren kann es nicht.
+
+`tools/pdf-lines.py` liest diese Aufschlüsselung aus den Blättern —
+nützlich, sobald neue Handmessungen dazukommen.
 
 **Der engere Zuschnitt kostet Abdeckung**: 16 von 85 Objekten bekommen keinen
 Vorschlag mehr statt 1. Das ist gewollt. Keine Zahl ist ehrlicher als eine
