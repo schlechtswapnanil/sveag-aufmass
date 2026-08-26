@@ -61,6 +61,35 @@ on single-run objects only returns the same three values, so the fit is stable.
 The tighter fit costs coverage: **16 of 85 objects get no proposal** instead of 1.
 Deliberate — a blank is honest, a wrong number is not.
 
+### A second portfolio: Potsdam
+
+A separate list of 97 Potsdam objects (25 with stated dimensions) is a genuine
+out-of-sample test — different city, different state, different convention. The
+model **does not transfer**:
+
+| | Median deviation | ±20 % | ±50 % |
+|---|---:|---:|---:|
+| one address per row (as before) | 91 % | 1/25 | 9/25 |
+| **address ranges expanded and summed** | **64 %** | 2/25 | 10/25 |
+
+Expanding the ranges is a real gain — `Hans-Sachs-Straße 3 – 55` is 27 houses,
+and treating it as one moved the estimate from 30 m to 908 m against a stated
+1800 m. `tools/expand-range.py` resolves the German conventions: a range runs
+along one side of the street, so `26 – 38` means 26, 28 … 38; mixed parity
+(`5 – 8`) counts in ones; `14 a – c` expands the letters. Neighbouring houses
+often share a parcel, so identical frontage lines are counted once.
+
+But 64 % is still unusable, and the reasons are structural rather than tunable:
+
+* **Potsdam prices estates, Leipzig priced properties.** 21 of 25 rows are
+  ranges covering up to 27 buildings.
+* **The figures combine categories** — *"Gehweg und Zugang Grundstück
+  1,5 m × 130 m"* is pavement *and* access path in one number, and the access
+  path is precisely the quarter that lies on no vector edge.
+* **The confidence flag does not carry over.** On this list the rows marked
+  `hoch` are *worse* (125 % median) than those marked `niedrig` (91 %). It was
+  calibrated on Leipzig.
+
 ### Everything else
 
 | Step | State |
