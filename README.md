@@ -118,11 +118,14 @@ to look at.
 
 Ranked by effect:
 
-1. **20–30 more Aufmaßblätter for properties *with* an access path.** Five is too
-   few to build against. Those paths *are* visible in the orthophoto — the aerial
-   step needs aiming at that one shape instead of trying to segment whole plots.
-   This is the single biggest remaining gap, and it is exactly the 9 % that is
-   currently under-estimated without the method noticing.
+1. ~~More sheets, then aim an image model at the access paths.~~ **Tested and
+   rejected.** With the sheets georeferenced, the image features could be checked
+   against real labels — 219 640 pixels on the cleared path against 4,4 million
+   beside it. The distributions are indistinguishable (separability 0,23–0,28 at
+   every distance band). The cleared pavement looks like everything around it,
+   *because* everything around it is also paved. Which strip must be cleared is a
+   question of Anliegerpflicht — ownership, not appearance. See
+   [`automation/cv/README.md`](automation/cv/README.md).
 
 2. **Fix `count: '5'` in the source repo.** The tool's parcel query truncates, so
    it can silently measure a *neighbour's* frontage. Measured at scale: **28 of 76**

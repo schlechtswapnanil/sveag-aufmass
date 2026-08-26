@@ -185,6 +185,34 @@ Vektordaten schlicht nicht vorkommt.
 Das deckt sich mit der Obergrenze von 70 %, die die Auswahlregeln erreichen —
 und erklärt sie.
 
+## Warum das Luftbild hier nicht weiterhilft
+
+Mit den verorteten Blättern lassen sich die Bildmerkmale zum ersten Mal an
+echten Beschriftungen prüfen: 94 Strecken, 1389 m geräumter Weg, 219 640
+Bildpunkte auf dem Weg gegen 4,4 Mio. daneben (`tools/sample-labels.py`).
+
+| Merkmal | auf dem Weg | 3–12 m daneben | 12–25 m | 25–45 m |
+|---|---:|---:|---:|---:|
+| Helligkeit (normiert) | 0,96 | 0,99 | 0,99 | 0,99 |
+| Sättigung | 0,38 | 0,27 | 0,26 | 0,26 |
+| Textur | 4,35 | 3,95 | 3,69 | 4,07 |
+| ExG | 1,08 | 1,24 | 1,62 | 1,97 |
+| **Trennschärfe** | | **0,23** | **0,28** | **0,25** |
+
+Die Verteilungen sind praktisch deckungsgleich — bei jedem Abstand. Der
+geräumte Gehweg sieht aus wie alles um ihn herum, **weil** alles um ihn herum
+ebenfalls befestigt ist: Fahrbahn, Nachbargehweg, Hofzufahrt.
+
+Damit ist die Aufgabe keine Bildsegmentierung. Welcher befestigte Streifen
+geräumt werden muss, ist eine Frage der Anliegerpflicht — also des Eigentums,
+nicht des Aussehens. Der Vektorweg über Flurstück und Gebäudegrundriss ist
+folglich nicht der Notbehelf, für den er hier zeitweise gehalten wurde,
+sondern der sachlich richtige.
+
+**Das korrigiert eine frühere Empfehlung in diesem Repository.** Aus „die Wege
+sind im Orthophoto sichtbar" wurde geschlossen, ein Bildmodell auf den
+verorteten Blättern sei der Weg nach vorn. Die Messung sagt das Gegenteil.
+
 ## Grenzen
 
 - **Nur 9 Bundesländer** haben Luftbild *und* Flurstück offen: BW, BB, HH, MV,
