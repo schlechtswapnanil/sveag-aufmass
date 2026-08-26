@@ -2,6 +2,13 @@
 # Personen - die gehoeren nicht ins Repository, auch nicht in ein privates.
 automation/work/
 
+# Anhaenge aus Kundenanfragen (Objektlisten, Lageplaene, Flurkarten).
+# Gehoeren nach automation/work/, landen aber erfahrungsgemaess zuerst hier.
+*.xlsx
+*.xls
+*.docx
+*.pdf
+
 # Aus dem gebauten Tool entnommen, jederzeit reproduzierbar:
 #   node cv/extract-vendor.js ../Aufmass_2026-08-21.html
 automation/vendor/

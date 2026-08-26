@@ -139,40 +139,65 @@ async function main() {
     console.error(`  ${queries.length} Adressen im Auftrag - es entstehen ${queries.length} Objekte.`);
   }
 
+  // Bei einer Objektliste (Portfolio-Anfrage) darf eine unauffindbare Adresse
+  // nicht die ganze Vorbereitung kippen. Fehlschlaege werden gesammelt und am
+  // Ende benannt - uebersprungen, aber nicht verschwiegen.
   const geos = [];
-  for (const address of queries) {
+  const failures = [];
+  const leise = queries.length > 5;
+  // Bei langen Listen bewusst langsam: der oeffentliche Photon-Dienst drosselt
+  // sonst, und eine halbe Objektliste ist schlimmer als eine langsame ganze.
+  const abstandMs = queries.length > 20 ? 400 : 0;
+  for (const [i, address] of queries.entries()) {
+    if (abstandMs && i > 0) await new Promise((r) => setTimeout(r, abstandMs));
     const query = geocodeQuery(brief, address);
-    const geo = await geocode(query);
+    let geo = null;
+    try {
+      geo = await geocode(query);
+    } catch (err) {
+      failures.push(`${address}: ${err.message}`);
+      continue;
+    }
     if (!geo) {
-      console.error(`✖ Kein Geocoding-Treffer fuer "${query}" - Adresse pruefen.`);
-      process.exit(1);
+      failures.push(`${address}: kein Treffer`);
+      continue;
     }
     if (geo.countryCode && geo.countryCode !== 'DE') {
-      // Ein unvollstaendiger oder vertippter Suchbegriff findet irgendwo auf
-      // der Welt irgendetwas. Ausserhalb Deutschlands ist das nie der Ort.
-      console.error(
-        `✖ Geocoding-Treffer liegt in ${geo.countryCode}, nicht in Deutschland: "${geo.label}".\n` +
-        '  Adresse im Brief pruefen.'
-      );
-      process.exit(1);
+      failures.push(`${address}: Treffer liegt in ${geo.countryCode} ("${geo.label}")`);
+      continue;
     }
-    console.error(`  Adresse: ${geo.label} (${geo.lat.toFixed(5)}, ${geo.lon.toFixed(5)}) · ${geo.state || 'Bundesland unbekannt'}`);
+    const warnungen = [];
     if (!geo.state) {
       // Ohne Bundesland findet das Tool weder das Landes-Luftbild (WMS) noch
       // den Flurstuecks-Dienst (WFS) - der Gehweg-Vorschlag entfaellt dann.
-      console.error('  ! Ohne Bundesland: kein Landes-Luftbild und kein Flurstueck-Vorschlag im Tool.');
+      warnungen.push('kein Bundesland: kein Landes-Luftbild, kein Flurstueck-Vorschlag');
     }
     // Photon liefert bei mehrdeutigen Strassennamen gern die falsche von
-    // mehreren gleichnamigen Strassen einer Stadt. Die PLZ aus der Mail ist
-    // der billigste Gegencheck.
-    const pc = brief.object.postcode;
+    // mehreren gleichnamigen Strassen einer Stadt. Die PLZ ist der billigste
+    // Gegencheck - hier aus der Adresse selbst, weil eine Objektliste je
+    // Zeile eine eigene PLZ hat.
+    const pc = (address.match(/\b(\d{5})\b/) || [])[1] || brief.object.postcode;
     if (pc && !geo.label.includes(pc)) {
-      console.error(
-        `  ! PLZ-Abweichung: Mail nennt ${pc}, Geocoder liefert "${geo.label}". ` +
-        'Vor der Freigabe pruefen - vermutlich eine gleichnamige Strasse im selben Ort.'
-      );
+      warnungen.push(`PLZ-Abweichung: erwartet ${pc}, Treffer "${geo.label}"`);
+    }
+    if (!leise) {
+      console.error(`  Adresse: ${geo.label} (${geo.lat.toFixed(5)}, ${geo.lon.toFixed(5)}) · ${geo.state || 'Bundesland unbekannt'}`);
+      for (const w of warnungen) console.error(`  ! ${w}`);
+    } else if (warnungen.length) {
+      console.error(`  ! ${address} → ${warnungen.join('; ')}`);
     }
     geos.push(geo);
+    if (leise && (i + 1) % 25 === 0) console.error(`  … ${i + 1}/${queries.length}`);
+  }
+
+  if (leise) console.error(`  ${geos.length} von ${queries.length} Adressen geocodiert.`);
+  if (failures.length) {
+    console.error(`  ! ${failures.length} Adresse(n) ohne Objekt - im Tool von Hand anlegen:`);
+    for (const f of failures) console.error(`      ${f}`);
+  }
+  if (geos.length === 0) {
+    console.error('✖ Keine einzige Adresse aufloesbar - Abbruch.');
+    process.exit(1);
   }
 
   const file = briefToImportFile(brief, geos);

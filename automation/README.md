@@ -149,6 +149,7 @@ zwischen Straße und PLZ ist kein Betrug). Eine gedrehte Hausnummer fällt auf.
 | `schema/brief.schema.json` | der Vertrag — was ein Brief enthalten darf |
 | `prompts/parse-email.md` | die Extraktionsanweisung fürs Modell |
 | `src/vocabulary.js` | Kundenbegriffe → die fünf Tool-Kategorien |
+| `tools/xlsx-to-text.py` | Excel-Anhang → Quelltext (Objektlisten) |
 | `src/brief.js` | Tier-Einstufung, Beleg- und Konsistenzprüfung |
 | `src/schema-check.js` | schlanker Schema-Validator (statt ajv, damit dependency-frei) |
 | `src/to-aufmass.js` | Brief → Objekt im Format von `importJson()` des Tools |
@@ -184,6 +185,29 @@ automatischen Gehweg-Vorschlag betrifft: `count: '5'` in `wfsGetFeatureUrl()`
 lässt in dichter Bebauung das richtige Flurstück aus der Antwort fallen, und
 das Tool misst dann stillschweigend die Front der Nachbarn. In zwei von fünf
 geprüften NRW-Adressen trat das auf, einmal mit 128 m statt 35 m.
+
+## Anhänge und Objektlisten
+
+Ein Anhang zählt nur, wenn sein Inhalt im Quelltext steht — sonst lässt sich
+nichts daraus belegen. Für Excel-Objektlisten:
+
+```bash
+python3 tools/xlsx-to-text.py "Objektliste.xlsx" >> work/kunde.source.txt
+```
+
+Jede Zeile wird komma-getrennt gerendert („Herrnhuter Straße 23, 04318 Leipzig,
+Anger-Crottendorf"), damit eine Adresse daraus wörtlich zitierbar ist. Ein
+Tabulator oder Pipe als Trenner bricht die Beleg-Prüfung, weil
+`normalizeAddress()` nur Punkt, Komma, Semikolon, Schrägstrich und Bindestrich
+entfernt.
+
+**Portfolio-Anfragen** (Verwalter schreiben 50–100 Objekte auf einmal aus)
+laufen über `moreAddresses` und ergeben ein Tool-Objekt je Adresse. Der
+Geocoder wird dabei gedrosselt — 400 ms Abstand, Wiederholung mit wachsendem
+Abstand bei HTTP 429/503. Ohne das kippt der öffentliche Photon-Dienst ab etwa
+der 55. Adresse in 503 und die halbe Liste fehlt, ohne dass es auffällt.
+Adressen, die trotzdem nicht auflösen, werden am Ende einzeln benannt und
+gehören von Hand ins Tool.
 
 ## Der Rücklauf
 

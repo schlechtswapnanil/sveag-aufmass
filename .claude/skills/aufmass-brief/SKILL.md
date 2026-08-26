@@ -40,9 +40,24 @@ das o. g. Objekt" und meinen den Betreff. Steht er nicht im Quelltext, lässt
 sich die Adresse später nicht belegen und der Brief fällt durch die Prüfung —
 das ist Absicht, nicht ein Fehler, den man umgehen sollte.
 
-Anhänge kann der Gmail-Connector **nicht** herunterladen. Notiere sie nur mit
-Namen und Typ; ob ein Plan Maße trägt, ist von außen nicht erkennbar, also
-`hasDimensions: false`, solange niemand hineingesehen hat.
+### Anhänge
+
+Der Gmail-Connector kann sie **nicht** herunterladen. Liegt die Datei aber
+lokal vor (weitergeleitet, aus Drive, im Projektordner), gehört ihr Inhalt in
+denselben Quelltext — sonst lässt sich nichts daraus belegen.
+
+Objektlisten als Excel:
+
+```
+python3 tools/xlsx-to-text.py "Objektliste.xlsx" >> work/<kunde>.source.txt
+```
+
+Das rendert jede Zeile komma-getrennt („Herrnhuter Straße 23, 04318 Leipzig,
+Anger-Crottendorf"), damit eine Adresse daraus wörtlich zitierbar ist. Ein
+anderes Trennzeichen bricht die Beleg-Prüfung.
+
+Ist der Anhang nur benannt und nicht lesbar, notiere Name und Typ und setze
+`hasDimensions: false` — ob ein Plan Maße trägt, ist von außen nicht erkennbar.
 
 ## 2. Brief extrahieren
 
@@ -74,6 +89,13 @@ node src/cli.js prepare work/<kunde>.brief.json --source work/<kunde>.source.txt
 Bei mehreren Adressen entsteht ein Objekt je Adresse. Warnungen (`!`)
 weitergeben statt schlucken — eine PLZ-Abweichung bedeutet meist die falsche
 von zwei gleichnamigen Straßen.
+
+**Objektlisten** (Portfolio-Anfragen, oft 50–100 Adressen) laufen gedrosselt:
+400 ms Abstand, und bei HTTP 429/503 wird mit wachsendem Abstand wiederholt.
+Der öffentliche Photon-Dienst kippt sonst ab etwa der 55. Adresse und die halbe
+Liste fehlt. Rechne mit mehreren Minuten. Adressen, die trotzdem nicht
+auflösen, werden am Ende einzeln benannt — die gehören von Hand ins Tool, nicht
+unter den Tisch.
 
 ## 5. Zurückmelden
 

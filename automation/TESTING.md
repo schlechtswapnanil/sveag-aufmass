@@ -117,6 +117,21 @@ Check by hand:
 
 ---
 
+## 4b. An enquiry with an attachment
+
+If the attachment is an Excel object list, render it into the **same** source
+file — an attachment nobody has read cannot evidence anything:
+
+```bash
+python3 tools/xlsx-to-text.py "Objektliste.xlsx" >> work/kunde.source.txt
+```
+
+A portfolio enquiry (50–100 addresses) becomes one tool object per address.
+Expect `prepare` to take **several minutes**: the public geocoder is throttled
+deliberately, because it starts returning 503 at around the 55th address
+otherwise. Addresses that still fail are listed individually at the end — those
+go into the tool by hand.
+
 ## 5. The round trip: brief → tool → sheet
 
 ```bash
