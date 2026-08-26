@@ -133,6 +133,58 @@ Der Code steht noch da (`paved_mask(..., adaptive=True)`), der Trennschärfe-Wer
 wird berechnet und gemeldet, benutzt wird er nicht. Mit mehr Vergleichsfällen
 lohnt ein zweiter Blick.
 
+## Aufmaßblätter verorten
+
+`tools/pdf-georef.py` holt die gezeichneten Strecken aus den Aufmaßblättern und
+gibt ihnen Koordinaten. Damit liegt zum ersten Mal die **tatsächlich gemessene
+Geometrie** vor, nicht nur die Länge aus der Tabelle.
+
+Die Blätter enthalten keine einzige Koordinate — kein BBOX, kein CRS, keine
+Kachel-URL. Verortet wird deshalb über das Bild: das Kachelmosaik wird gegen
+einen größeren Ausschnitt desselben Landes-Luftbilds geschoben, bis es passt.
+Das geht auf, weil die Kacheln aus einer Leaflet-WMS-Ebene stammen und damit im
+Web-Mercator-Raster liegen — wird der Vergleichsausschnitt in EPSG:3857 mit
+genau der Zoomstufen-Auflösung geholt, bleibt nur eine Verschiebung zu suchen.
+
+**46 von 86 Blättern verortet**, Kreuzkorrelation im Median 0,999, und jedes
+davon gegen die Beschriftung gegengeprüft: **Längenabweichung im Median 0,0 %**.
+Ergebnis sind 94 Gehweg-Strecken mit echter Geometrie.
+
+Drei Dinge mussten dafür stimmen, jedes davon hat zunächst gefehlt:
+
+* **Die Zoomstufe ist nicht überall gleich.** Das Tool passt die Karte per
+  fitBounds an die Strecken an; ein kleines Grundstück landet auf z21, ein
+  großes auf z19. Mit fest angenommenem z19 schlugen 50 von 86 fehl. Sie wird
+  jetzt aus dem Maßstab abgeleitet (beschriftete Länge ÷ Pfadlänge) und die
+  Nachbarstufen werden mitprobiert.
+* **Der Adressabgleich** über den vollen Dateinamen ließ 27 Blätter durchfallen,
+  obwohl die Adresse bekannt war — mal fehlt das Komma, mal der Ort. Verglichen
+  wird jetzt Straße + Hausnummer + PLZ.
+* **Die Gegenprobe** verglich sortierte Längen und paarte dadurch ein
+  „Front door 1 m" gegen eine 24-m-Linie (2370 % Scheinabweichung). Verglichen
+  wird jetzt je Kategorie, mit absoluter Toleranz für die auf ganze Meter
+  gerundeten Beschriftungen.
+
+### Was dabei herauskam
+
+Von der tatsächlich gemessenen Gehweg-Länge liegen innerhalb von 4 m
+
+| von einer | Anteil |
+|---|---:|
+| Flurstückskante | 72 % |
+| Gebäudekante | 53 % |
+| einer der beiden | **75 %** |
+
+**29 von 39 Objekten liegen zu mindestens 80 % auf einer Kante** — dort kann ein
+geometrisches Verfahren die Strecke grundsätzlich finden. Bei vier Objekten
+(Hinrichsenstraße 24, Lessingstraße 10, Siemensstraße 24, Thomasiusstraße 15)
+liegen **0 %** auf einer Kante: der geräumte Weg verläuft quer über das
+Grundstück. Für die ist kein Parametersatz zu finden, weil die Geometrie in den
+Vektordaten schlicht nicht vorkommt.
+
+Das deckt sich mit der Obergrenze von 70 %, die die Auswahlregeln erreichen —
+und erklärt sie.
+
 ## Grenzen
 
 - **Nur 9 Bundesländer** haben Luftbild *und* Flurstück offen: BW, BB, HH, MV,

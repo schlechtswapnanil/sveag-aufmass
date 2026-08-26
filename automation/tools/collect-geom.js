@@ -78,6 +78,10 @@ for (const zeile of gt) {
       const b = pickBuilding(buildings, pt);
       rec.streets = streets;
       rec.building = b;
+      // Alle Gebaeude im Ausschnitt mitnehmen: erst daran laesst sich
+      // erkennen, ob ein Flurstueck ein Sammelflurstueck ist (viele Gebaeude
+      // darin) oder das Grundstueck genau dieses einen Hauses.
+      rec.buildings = buildings;
       rec.adressen = b ? (adressPunkte.filter((p) => ringContains(b, p)).length || 1) : null;
       const wfs = REG.WFS_BY_STATE[o.bundesland];
       if (wfs) {
