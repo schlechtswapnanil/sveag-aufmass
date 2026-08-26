@@ -1,0 +1,91 @@
+{
+  "schemaVersion": "1.0",
+  "mail": {
+    "messageId": null,
+    "threadId": null,
+    "subject": null,
+    "receivedAt": null
+  },
+  "tier": "B",
+  "contact": {
+    "name": "A. Beispiel",
+    "email": null,
+    "phone": null,
+    "role": "unbekannt"
+  },
+  "object": {
+    "addressRaw": null,
+    "addressSource": "fehlt",
+    "street": null,
+    "houseNumber": null,
+    "postcode": null,
+    "city": null,
+    "objectType": "unbekannt",
+    "units": null,
+    "accessNote": null
+  },
+  "sectorListIsExhaustive": true,
+  "sectors": [
+    {
+      "category": "gehweg",
+      "present": true,
+      "source": "email",
+      "confidence": "high",
+      "evidence": "In Gelb markiert auf der Flurkarte sind: Fußwege",
+      "label": "Fußwege"
+    },
+    {
+      "category": "haustuer",
+      "present": true,
+      "source": "email",
+      "confidence": "high",
+      "note": "inkl. Stufen",
+      "evidence": "Hauszugänge + Stufen",
+      "label": "Hauszugänge + Stufen"
+    },
+    {
+      "category": "muelltonnen",
+      "present": true,
+      "source": "email",
+      "confidence": "high",
+      "evidence": "Mülltonnen Zuwegung",
+      "label": "Mülltonnen Zuwegung"
+    },
+    {
+      "category": "garage",
+      "present": true,
+      "source": "email",
+      "confidence": "high",
+      "evidence": "in blau markiert auf der Karte: Garagenzufahrt.",
+      "label": "Garagenzufahrt"
+    },
+    {
+      "category": "haustuer",
+      "label": "Hauszugangsstufen",
+      "present": true,
+      "source": "email",
+      "confidence": "high",
+      "evidence": "Hauszugänge + Stufen"
+    }
+  ],
+  "service": {
+    "scope": [
+      "raeumen"
+    ],
+    "seasonFrom": null,
+    "seasonTo": null,
+    "specials": []
+  },
+  "attachments": [
+    {
+      "filename": "Flurkarte",
+      "kind": "lageplan",
+      "note": "gelb = Fußwege/Hauszugänge/Mülltonnen, blau = Garagenzufahrt",
+      "hasDimensions": false
+    }
+  ],
+  "openQuestions": [
+    "Adresse steht nicht in der Mail (\"o. g. Objekt in Musterbezirk/Musterort\") - aus Betreff oder Vorgänger-Mail nachziehen.",
+    "Flurkarte mit den gelb/blau markierten Bereichen liegt der Mail bei? Ohne sie ist unklar, welche Fußwege gemeint sind."
+  ]
+}

@@ -1,0 +1,95 @@
+{
+  "schemaVersion": "1.0",
+  "mail": {
+    "messageId": null,
+    "threadId": null,
+    "subject": "Winterdienst für unsere Wohnanlagen in Musterstadt-Musterviertel (VE 101 - 105)",
+    "receivedAt": "2026-06-01T09:33:00Z"
+  },
+  "tier": "C",
+  "contact": {
+    "name": "C. Beispiel",
+    "email": "c.beispiel@example.org",
+    "phone": null,
+    "role": "verwalter"
+  },
+  "object": {
+    "addressRaw": "Beispielweg 83 – 87",
+    "addressSource": "email-body",
+    "street": "Beispielweg",
+    "houseNumber": "83 – 87",
+    "postcode": null,
+    "city": "Musterstadt Musterviertel",
+    "objectType": "mehrfamilienhaus",
+    "units": null,
+    "moreAddresses": [
+      "Musterredder 98 – 104",
+      "Beispiel-Löns-Weg 1 – 51"
+    ],
+    "accessNote": null,
+    "onSiteContact": "Hausmeister Herr S., 0160 / 00 00 00 00"
+  },
+  "sectorListIsExhaustive": true,
+  "sectors": [
+    {
+      "category": "gehweg",
+      "present": true,
+      "areaM2": 714.3,
+      "isEstimate": false,
+      "note": "öffentliche Gehwege",
+      "source": "email",
+      "confidence": "high",
+      "evidence": "Öffentliche Gehwege gesamt 714,30 qm",
+      "label": "Öffentliche Gehwege"
+    },
+    {
+      "category": "haustuer",
+      "label": "Wohnwege",
+      "present": true,
+      "areaM2": 291,
+      "isEstimate": false,
+      "source": "email",
+      "confidence": "high",
+      "evidence": "Wohnwege gesamt 291,00 qm"
+    },
+    {
+      "category": "muelltonnen",
+      "present": true,
+      "areaM2": 57,
+      "isEstimate": false,
+      "source": "email",
+      "confidence": "high",
+      "evidence": "Müllstandorte gesamt 57,00 qm",
+      "label": "Müllstandorte"
+    },
+    {
+      "category": "haustuer",
+      "label": "Kellerniedergänge (Podest, Stufen, Rampe)",
+      "present": true,
+      "areaM2": 15,
+      "isEstimate": false,
+      "source": "email",
+      "confidence": "high",
+      "evidence": "Kellerniedergänge (Podest, Stufen, Rampe) gesamt 15,00 qm"
+    }
+  ],
+  "service": {
+    "scope": [
+      "raeumen",
+      "streuen",
+      "abtransport"
+    ],
+    "seasonFrom": "2026-11-01",
+    "seasonTo": null,
+    "einsaetze": 15,
+    "streugutentsorgung": true,
+    "offerDeadline": "2026-06-09",
+    "specials": [
+      "Kosten für weitere Einsätze über die 15 hinaus mit angeben"
+    ]
+  },
+  "attachments": [],
+  "openQuestions": [
+    "Wie verteilen sich die 1.077,30 qm auf die drei Straßenzüge? Die Mail nennt nur die Summe."
+  ]
+}

@@ -1,0 +1,98 @@
+{
+  "schemaVersion": "1.0",
+  "mail": {
+    "messageId": null,
+    "threadId": null,
+    "subject": "Winterdienst Ausschreibung - Objekt Kieler Straße 88",
+    "receivedAt": null
+  },
+  "tier": "C",
+  "contact": {
+    "name": "Thorsten Ahrens",
+    "email": "objektbetreuung@example.org",
+    "phone": null,
+    "role": "verwalter"
+  },
+  "object": {
+    "addressRaw": "Kieler Straße 88, 24114 Kiel",
+    "addressSource": "email-body",
+    "street": "Kieler Straße",
+    "houseNumber": "88",
+    "postcode": "24114",
+    "city": "Kiel",
+    "objectType": "mehrfamilienhaus",
+    "units": 18,
+    "accessNote": null
+  },
+  "sectors": [
+    {
+      "category": "gehweg",
+      "present": true,
+      "lengthM": 42,
+      "isEstimate": false,
+      "source": "email",
+      "confidence": "high",
+      "evidence": "Gehweg entlang der Kieler Straße: 42 m"
+    },
+    {
+      "category": "haustuer",
+      "present": true,
+      "lengthM": 9,
+      "isEstimate": false,
+      "note": "Zuwegung Haupteingang",
+      "source": "email",
+      "confidence": "high",
+      "evidence": "Zuwegung Haupteingang: 9 m"
+    },
+    {
+      "category": "garage",
+      "present": true,
+      "lengthM": 16,
+      "isEstimate": false,
+      "note": "Zufahrt Tiefgarage",
+      "source": "email",
+      "confidence": "high",
+      "evidence": "Zufahrt Tiefgarage: 16 m"
+    },
+    {
+      "category": "parkplatz",
+      "present": true,
+      "areaM2": 120,
+      "isEstimate": false,
+      "note": "Besucherstellplaetze",
+      "source": "email",
+      "confidence": "high",
+      "evidence": "Stellplaetze Besucher: 120 m²"
+    },
+    {
+      "category": "muelltonnen",
+      "present": true,
+      "lengthM": 6,
+      "count": 8,
+      "isEstimate": false,
+      "source": "email",
+      "confidence": "high",
+      "evidence": "Muelltonnenstandplatz: 6 m, 8 Tonnen"
+    }
+  ],
+  "service": {
+    "scope": [
+      "raeumen",
+      "streuen"
+    ],
+    "seasonFrom": "2026-11-01",
+    "seasonTo": "2027-03-31",
+    "specials": [
+      "Raeumung werktags bis 07:00 Uhr"
+    ]
+  },
+  "attachments": [
+    {
+      "filename": "Lageplan_Kieler_88.pdf",
+      "kind": "lageplan",
+      "note": null,
+      "hasDimensions": true
+    }
+  ],
+  "openQuestions": []
+}

@@ -1,0 +1,38 @@
+{
+  "schemaVersion": "1.0",
+  "mail": {
+    "messageId": null,
+    "threadId": null,
+    "subject": "Winterdienst Angebot",
+    "receivedAt": null
+  },
+  "tier": "A",
+  "contact": {
+    "name": "Martin Brenner",
+    "email": "m.brenner@example.org",
+    "phone": null,
+    "role": "unbekannt"
+  },
+  "object": {
+    "addressRaw": "Lindenstraße 14, 33602 Bielefeld",
+    "addressSource": "email-body",
+    "street": "Lindenstraße",
+    "houseNumber": "14",
+    "postcode": "33602",
+    "city": "Bielefeld",
+    "objectType": "unbekannt",
+    "units": null,
+    "accessNote": null
+  },
+  "sectors": [],
+  "service": {
+    "scope": [
+      "unbekannt"
+    ],
+    "seasonFrom": null,
+    "seasonTo": null,
+    "specials": []
+  },
+  "attachments": [],
+  "openQuestions": []
+}

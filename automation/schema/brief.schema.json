@@ -1,0 +1,176 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sveag.de/schema/aufmass-brief-1.0.json",
+  "title": "Aufmaß-Brief",
+  "description": "Strukturierte Anfrage, aus einer Kunden-E-Mail extrahiert. Speist das Aufmaß-Tool. Jede Angabe traegt ihre Herkunft (source) und ihren Beleg (evidence).",
+  "type": "object",
+  "required": ["schemaVersion", "tier", "object", "sectors"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+
+    "mail": {
+      "type": "object",
+      "description": "Herkunft der Anfrage. Rein informativ, wird nicht ausgewertet.",
+      "additionalProperties": false,
+      "properties": {
+        "messageId": { "type": ["string", "null"] },
+        "threadId": { "type": ["string", "null"] },
+        "subject": { "type": ["string", "null"] },
+        "receivedAt": { "type": ["string", "null"], "description": "ISO-8601" }
+      }
+    },
+
+    "tier": {
+      "enum": ["A", "B", "C"],
+      "description": "A = nur Adresse, B = Teilangaben, C = vollstaendig. NICHT frei waehlen - wird von classifyTier() berechnet und beim Validieren geprueft."
+    },
+
+    "contact": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": ["string", "null"] },
+        "email": { "type": ["string", "null"] },
+        "phone": { "type": ["string", "null"] },
+        "role": { "enum": ["eigentuemer", "verwalter", "mieter", "gewerbe", "unbekannt"] }
+      }
+    },
+
+    "object": {
+      "type": "object",
+      "required": ["addressRaw", "addressSource"],
+      "additionalProperties": false,
+      "properties": {
+        "addressRaw": {
+          "type": ["string", "null"],
+          "minLength": 3,
+          "description": "Adresse wortwoertlich wie in der Quelle. Nicht korrigieren, nicht ergaenzen. null, wenn die Mail nur auf sie verweist (\"o. g. Objekt\") - dann addressSource auf \"fehlt\" setzen."
+        },
+        "addressSource": {
+          "enum": ["email-body", "betreff", "thread", "anhang", "fehlt"],
+          "default": "email-body",
+          "description": "Woher die Adresse stammt. Anfragen von Hausverwaltungen nennen sie oft nur im Betreff oder in der Vorgaenger-Mail. Nur bei \"email-body\" wird sie gegen den Mailtext geprueft."
+        },
+        "street": { "type": ["string", "null"] },
+        "houseNumber": { "type": ["string", "null"] },
+        "postcode": { "type": ["string", "null"], "pattern": "^[0-9]{5}$" },
+        "city": { "type": ["string", "null"] },
+        "objectType": {
+          "enum": ["einfamilienhaus", "doppelhaus", "reihenhaus", "mehrfamilienhaus", "gewerbe", "unbekannt"]
+        },
+        "units": { "type": ["integer", "null"], "minimum": 1, "description": "Wohneinheiten bei Mehrfamilienhaus" },
+        "moreAddresses": {
+          "type": "array",
+          "description": "Weitere Adressen desselben Auftrags. Wohnungsgenossenschaften schreiben eine Wohnanlage ueber mehrere Strassenzuege aus (\"Erdkampsweg 83-87, Heschredder 98-104 sowie Hermann-Loens-Weg 1-51\"). Jede Adresse wird zu einem eigenen Objekt im Tool - eine einzige Koordinate deckt die Anlage nicht ab.",
+          "items": { "type": "string" }
+        },
+        "accessNote": { "type": ["string", "null"], "description": "z. B. 'Zugang ueber Hofseite', 'Hinterhaus'" },
+        "onSiteContact": { "type": ["string", "null"], "description": "Hausmeister o. ae. fuer den Vorort-Termin, mit Telefonnummer" }
+      }
+    },
+
+    "sectorListIsExhaustive": {
+      "type": "boolean",
+      "default": false,
+      "description": "true, wenn die Mail die zu raeumenden Bereiche abschliessend aufzaehlt (\"wie folgt:\", \"markiert sind:\", Aufzaehlungsliste). Dann gilt: nicht genannt = nicht beauftragt, und es wird nur gemessen, was dasteht. Ohne das Kennzeichen wird jede ungenannte Kategorie vorsorglich gemessen - und damit womoeglich etwas angeboten, was niemand bestellt hat."
+    },
+
+    "sectors": {
+      "type": "array",
+      "description": "Ein Eintrag je Kategorie des Tools. Kategorien, zu denen die Mail nichts sagt, entweder weglassen oder mit present=null aufnehmen.",
+      "items": { "$ref": "#/$defs/sector" }
+    },
+
+    "service": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "scope": {
+          "type": "array",
+          "items": { "enum": ["raeumen", "streuen", "abtransport", "unbekannt"] }
+        },
+        "seasonFrom": { "type": ["string", "null"], "description": "ISO-Datum" },
+        "seasonTo": { "type": ["string", "null"], "description": "ISO-Datum" },
+        "einsaetze": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "description": "Angefragte Zahl der Winterdiensteinsaetze pro Saison. Preisbestimmend - die Pauschale deckt eine feste Zahl ab, jeder weitere Einsatz wird einzeln berechnet."
+        },
+        "streugutentsorgung": {
+          "type": ["boolean", "null"],
+          "description": "Ob die Entsorgung des Streuguts nach der Saison mit angefragt ist."
+        },
+        "offerDeadline": { "type": ["string", "null"], "description": "ISO-Datum, bis wann das Angebot vorliegen soll" },
+        "specials": {
+          "type": "array",
+          "description": "Alles, was das Tool nicht als Kategorie kennt: Treppen, Streugutverbot, Zeitfenster.",
+          "items": { "type": "string" }
+        }
+      }
+    },
+
+    "attachments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["filename", "kind"],
+        "additionalProperties": false,
+        "properties": {
+          "filename": { "type": "string" },
+          "kind": { "enum": ["lageplan", "grundriss", "foto", "sonstiges"] },
+          "hasDimensions": {
+            "type": "boolean",
+            "default": false,
+            "description": "true nur, wenn der Plan Masse traegt. Eine Flurkarte mit farbig markierten Flaechen sagt WELCHE Bereiche - nicht WIE LANG - und ist damit Stufe B, nicht C."
+          },
+          "note": { "type": ["string", "null"] }
+        }
+      }
+    },
+
+    "openQuestions": {
+      "type": "array",
+      "description": "Was vor dem Angebot beim Kunden nachgefragt werden muss. Bei Tier A meist leer - da wird gemessen, nicht gefragt.",
+      "items": { "type": "string" }
+    }
+  },
+
+  "$defs": {
+    "sector": {
+      "type": "object",
+      "required": ["category", "present", "source"],
+      "additionalProperties": false,
+      "properties": {
+        "category": {
+          "enum": ["gehweg", "haustuer", "garage", "parkplatz", "muelltonnen", "sonstiges"],
+          "description": "gehweg/haustuer/garage/parkplatz/muelltonnen entsprechen 1:1 den CATEGORIES im Tool. sonstiges faengt alles auf, was sonst verloren ginge."
+        },
+        "label": { "type": ["string", "null"], "description": "Pflicht bei category=sonstiges" },
+        "present": {
+          "type": ["boolean", "null"],
+          "description": "true = laut Mail vorhanden, false = laut Mail ausdruecklich nicht vorhanden / nicht beauftragt, null = Mail sagt nichts dazu."
+        },
+        "lengthM": { "type": ["number", "null"], "minimum": 0, "maximum": 1000 },
+        "widthM": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+        "areaM2": { "type": ["number", "null"], "minimum": 0, "maximum": 100000 },
+        "count": { "type": ["integer", "null"], "minimum": 0, "description": "z. B. Anzahl Muelltonnen oder Stellplaetze" },
+        "isEstimate": {
+          "type": "boolean",
+          "default": false,
+          "description": "true, wenn der Kunde selbst schaetzt ('ca. 20 m'). Steuert, ob eine Abweichung zur Messung ueberhaupt gemeldet wird."
+        },
+        "note": { "type": ["string", "null"] },
+        "source": {
+          "enum": ["email", "kataster", "osm", "luftbild-ki", "annahme"],
+          "description": "Im Brief ist das immer 'email' oder 'annahme'. Die anderen Werte entstehen erst spaeter in der Messung."
+        },
+        "confidence": { "enum": ["high", "medium", "low"], "default": "medium" },
+        "evidence": {
+          "type": ["string", "null"],
+          "description": "Wortwoertliches Zitat aus der Mail, das diese Angabe belegt. Pflicht bei source=email - wird gegen den Mailtext geprueft."
+        }
+      }
+    }
+  }
+}

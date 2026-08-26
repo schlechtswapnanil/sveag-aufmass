@@ -1,0 +1,17 @@
+# Kundendaten. Anfragen enthalten Namen, Adressen und Telefonnummern echter
+# Personen - die gehoeren nicht ins Repository, auch nicht in ein privates.
+automation/work/
+
+# Aus dem gebauten Tool entnommen, jederzeit reproduzierbar:
+#   node cv/extract-vendor.js ../Aufmass_2026-08-21.html
+automation/vendor/
+
+# Zwischenprodukte des Luftbild-Schritts
+__pycache__/
+*.dop.png
+*.debug.png
+*.bbox
+!automation/cv/samples/*.png
+
+node_modules/
+.DS_Store

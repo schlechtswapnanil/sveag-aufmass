@@ -1,0 +1,67 @@
+{
+  "schemaVersion": "1.0",
+  "mail": {
+    "messageId": null,
+    "threadId": null,
+    "subject": null,
+    "receivedAt": null
+  },
+  "tier": "B",
+  "contact": {
+    "name": "B. Beispiel",
+    "email": null,
+    "phone": null,
+    "role": "verwalter"
+  },
+  "object": {
+    "addressRaw": null,
+    "addressSource": "fehlt",
+    "street": null,
+    "houseNumber": null,
+    "postcode": null,
+    "city": null,
+    "objectType": "mehrfamilienhaus",
+    "units": null,
+    "accessNote": null
+  },
+  "sectorListIsExhaustive": true,
+  "sectors": [
+    {
+      "category": "gehweg",
+      "present": true,
+      "source": "email",
+      "confidence": "high",
+      "evidence": "Gehweg vor dem Grundstück",
+      "label": "Gehweg vor dem Grundstück"
+    },
+    {
+      "category": "haustuer",
+      "present": true,
+      "source": "email",
+      "confidence": "high",
+      "evidence": "Weg zum Hauseingang",
+      "label": "Weg zum Hauseingang"
+    },
+    {
+      "category": "haustuer",
+      "label": "Hauszugangstreppe",
+      "present": true,
+      "source": "email",
+      "confidence": "high",
+      "evidence": "Hauszugangstreppe"
+    }
+  ],
+  "service": {
+    "scope": [
+      "unbekannt"
+    ],
+    "seasonFrom": null,
+    "seasonTo": null,
+    "specials": []
+  },
+  "attachments": [],
+  "openQuestions": [
+    "Adresse steht nicht in der Mail (\"o. a. Wohnanlage\") - aus Betreff oder Vorgänger-Mail nachziehen.",
+    "Nur räumen oder auch streuen? Die Mail sagt dazu nichts."
+  ]
+}

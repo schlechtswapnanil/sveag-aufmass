@@ -1,0 +1,85 @@
+{
+  "schemaVersion": "1.0",
+  "mail": {
+    "messageId": null,
+    "threadId": null,
+    "subject": "Anfrage Winterdienst Saison 2026/27",
+    "receivedAt": null
+  },
+  "tier": "B",
+  "contact": {
+    "name": "Sabine Koenig",
+    "email": "verwaltung@example.org",
+    "phone": "0231 000000",
+    "role": "verwalter"
+  },
+  "object": {
+    "addressRaw": "Goethestraße 27, 44135 Dortmund",
+    "addressSource": "email-body",
+    "street": "Goethestraße",
+    "houseNumber": "27",
+    "postcode": "44135",
+    "city": "Dortmund",
+    "objectType": "reihenhaus",
+    "units": null,
+    "accessNote": null
+  },
+  "sectors": [
+    {
+      "category": "gehweg",
+      "present": true,
+      "lengthM": null,
+      "source": "email",
+      "confidence": "high",
+      "evidence": "Zu raeumen sind der Gehweg vor dem Haus"
+    },
+    {
+      "category": "haustuer",
+      "present": true,
+      "lengthM": null,
+      "source": "email",
+      "confidence": "high",
+      "evidence": "der Weg zur Haustuer"
+    },
+    {
+      "category": "garage",
+      "present": true,
+      "lengthM": 12,
+      "isEstimate": true,
+      "note": "Einfahrt zur Garage",
+      "source": "email",
+      "confidence": "medium",
+      "evidence": "Die Einfahrt ist ca. 12 m lang."
+    },
+    {
+      "category": "muelltonnen",
+      "present": false,
+      "note": "liegt an der Einfahrt, laut Kunde in der Einfahrt mit abgedeckt",
+      "source": "email",
+      "confidence": "high",
+      "evidence": "Der Muelltonnenplatz liegt direkt an der Einfahrt und muss nicht separat geraeumt werden."
+    },
+    {
+      "category": "parkplatz",
+      "present": false,
+      "source": "email",
+      "confidence": "high",
+      "evidence": "Ein Parkplatz gehoert nicht zum Objekt."
+    }
+  ],
+  "service": {
+    "scope": [
+      "raeumen"
+    ],
+    "seasonFrom": "2026-11-01",
+    "seasonTo": null,
+    "specials": [
+      "Streusalz nicht erlaubt (Natursteinpflasterung)"
+    ]
+  },
+  "attachments": [],
+  "openQuestions": [
+    "Ist der Muelltonnenplatz wirklich von der Einfahrt mit abgedeckt oder braucht er eine eigene Position?",
+    "Bis wann laeuft die Saison?"
+  ]
+}

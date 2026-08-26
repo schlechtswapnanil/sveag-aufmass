@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "My Aufmass Tool",
+  "version": "1.0",
+  "description": "Custom measurement tool overlay",
+  "action": {
+    "default_popup": "Aufmass_2026-08-21.html"
+  },
+  "permissions": ["activeTab"]
+}

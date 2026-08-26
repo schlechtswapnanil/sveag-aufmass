@@ -1,0 +1,13 @@
+{
+  "name": "sveag-aufmass-automation",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Kundenmail -> gepruefter Aufmass-Brief -> Importdatei fuer das Aufmass-Tool",
+  "license": "UNLICENSED",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "test": "node --test 'test/*.test.js'",
+    "validate": "node src/cli.js validate",
+    "prepare-object": "node src/cli.js prepare"
+  }
+}
