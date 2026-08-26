@@ -118,3 +118,43 @@ test('CSV: Kopfzeile, BOM, und Trennzeichen im Text brechen die Spalten nicht', 
   assert.match(row, /"Wohnwege, innen"/);
   assert.match(row, /"Er sagte ""ja"""/);
 });
+
+// --- Links zu den Kontrollbildern --------------------------------------
+
+const os = require('node:os');
+const { slugFor, imageLink } = require('../src/to-sheet.js');
+
+test('Slug passt zu dem, was cv/run.py --out erzeugt', () => {
+  assert.strictEqual(slugFor('Erdkampsweg 87, 22335 Hamburg'), 'erdkampsweg-87-22335-hamburg');
+  assert.strictEqual(slugFor('Hermann-Löns-Weg 51, 22335 Hamburg'), 'hermann-loens-weg-51-22335-hamburg');
+  assert.strictEqual(slugFor('Straße Ärger Übung'), 'strasse-aerger-uebung');
+});
+
+test('image-map schlaegt Verzeichnis, Adresse und ID werden beide erkannt', () => {
+  const obj = { id: 'id-7', address: 'Erdkampsweg 87, 22335 Hamburg' };
+  assert.strictEqual(imageLink(obj, { imageMap: { 'Erdkampsweg 87, 22335 Hamburg': 'https://drive/a' } }), 'https://drive/a');
+  assert.strictEqual(imageLink(obj, { imageMap: { 'id-7': 'https://drive/b' } }), 'https://drive/b');
+  assert.strictEqual(imageLink(obj, { imageMap: { 'erdkampsweg-87-22335-hamburg': 'https://drive/c' } }), 'https://drive/c');
+});
+
+test('ein Bild, das es nicht gibt, wird nicht verlinkt', () => {
+  // Ein toter Link ist schlimmer als eine leere Zelle - er sieht aus wie ein Beleg.
+  const obj = { id: 'x', address: 'Gibtsnicht 1, 12345 Nirgendwo' };
+  assert.strictEqual(imageLink(obj, { imagesDir: os.tmpdir() }), '');
+  assert.strictEqual(imageLink(obj, {}), '');
+});
+
+test('vorhandenes Bild ergibt einen file://-Link', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aufmass-'));
+  const obj = { id: 'x', address: 'Beispielweg 1, 22335 Musterstadt' };
+  fs.writeFileSync(path.join(dir, `${slugFor(obj.address)}.debug.png`), 'x');
+  assert.match(imageLink(obj, { imagesDir: dir }), /^file:\/\/.*beispielweg-1-22335-musterstadt\.debug\.png$/);
+});
+
+test('am Objekt hinterlegte Links schlagen jede Konvention', () => {
+  const obj = objekt({ lines: [] });
+  obj.sveagLinks = { kontrollbild: 'https://drive/x', aufmassblatt: 'https://drive/y' };
+  const row = rowsForObject(obj, { imageMap: { [obj.address]: 'https://drive/anders' } })[0];
+  assert.strictEqual(row.Kontrollbild, 'https://drive/x');
+  assert.strictEqual(row.Aufmassblatt, 'https://drive/y');
+});

@@ -35,7 +35,44 @@ const COLUMNS = [
   'Quelle', 'Annahme', 'Status',
   'Einsaetze', 'Streugutentsorgung', 'Angebotsfrist',
   'Kontakt', 'Vor_Ort', 'Offene_Fragen', 'Hinweis',
+  'Kontrollbild', 'Aufmassblatt',
 ];
+
+// Dateiname-Grundform einer Adresse. Muss zu dem passen, was bei
+// `cv/run.py --out` herauskommt, sonst findet das Kontrollbild seine Zeile
+// nicht: "Erdkampsweg 87, 22335 Hamburg" -> "erdkampsweg-87-22335-hamburg".
+function slugFor(address) {
+  return String(address || '')
+    .toLowerCase()
+    .replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+// Link zum Kontrollbild eines Objekts.
+//
+// Zwei Wege, weil sie unterschiedlich weit tragen:
+//   imageMap  - { "<Adresse oder Objekt-ID>": "<URL>" }. Echte Web-Links,
+//               z. B. aus Google Drive. Nur die funktionieren in einem Sheet,
+//               das jemand anderes oeffnet.
+//   imagesDir - lokales Verzeichnis. Ergibt file://-Links, die nur auf dem
+//               Rechner funktionieren, auf dem gemessen wurde. Zum Selbst-
+//               nachsehen gut, zum Verschicken nicht.
+function imageLink(obj, { imageMap, imagesDir } = {}) {
+  if (imageMap) {
+    const hit = imageMap[obj.address] || imageMap[obj.id] || imageMap[slugFor(obj.address)];
+    if (hit) return hit;
+  }
+  if (imagesDir) {
+    const file = path.join(imagesDir, `${slugFor(obj.address)}.debug.png`);
+    // Nur verlinken, was es gibt - ein toter Link ist schlimmer als eine
+    // leere Zelle, weil er nach einem Beleg aussieht.
+    try {
+      if (require('node:fs').existsSync(file)) return `file://${path.resolve(file)}`;
+    } catch { /* Verzeichnis nicht lesbar - dann eben kein Link */ }
+  }
+  return '';
+}
 
 function round1(n) {
   return Math.round(n * 10) / 10;
@@ -81,7 +118,7 @@ function statedValue(sector) {
 // fuer das Ganze ("insgesamt 1.077,30 qm"), nicht je Strasse. Die Kundenangabe
 // darf deshalb nur an Teil 1 haengen - stuende sie an jedem Teil, ergaebe die
 // Spaltensumme das Dreifache.
-function rowsForObject(obj) {
+function rowsForObject(obj, opts = {}) {
   const carried = obj.sveagBrief || {};
   const brief = carried.brief || {};
   const svc = brief.service || {};
@@ -102,6 +139,10 @@ function rowsForObject(obj) {
     Kontakt: [contact.name, contact.email].filter(Boolean).join(' · '),
     Vor_Ort: (brief.object && brief.object.onSiteContact) || '',
     Offene_Fragen: (brief.openQuestions || []).join(' | '),
+    // Am Objekt hinterlegte Links schlagen alles andere - sie stehen dort,
+    // weil jemand sie bewusst gesetzt hat.
+    Kontrollbild: (obj.sveagLinks && obj.sveagLinks.kontrollbild) || imageLink(obj, opts),
+    Aufmassblatt: (obj.sveagLinks && obj.sveagLinks.aufmassblatt) || '',
   };
 
   const rows = [];
@@ -171,8 +212,8 @@ function rowsForObject(obj) {
   return rows;
 }
 
-function sheetRows(state) {
-  return (state.objects || []).flatMap(rowsForObject);
+function sheetRows(state, opts = {}) {
+  return (state.objects || []).flatMap((obj) => rowsForObject(obj, opts));
 }
 
 function csvCell(v) {
@@ -188,4 +229,7 @@ function toCsv(rows, { separator = ',', bom = true } = {}) {
   return (bom ? '﻿' : '') + [head, ...body].join('\n') + '\n';
 }
 
-module.exports = { COLUMNS, sheetRows, rowsForObject, toCsv, deviationPct, measuredByCategory };
+module.exports = {
+  COLUMNS, sheetRows, rowsForObject, toCsv, deviationPct, measuredByCategory,
+  slugFor, imageLink,
+};

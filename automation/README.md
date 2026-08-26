@@ -209,6 +209,30 @@ ist.
 
 Alles steht auf `zu pruefen`. Nichts setzt sich selbst auf freigegeben.
 
+### Kontrollbild je Zeile
+
+Die Spalte `Kontrollbild` verlinkt das Luftbild mit den eingezeichneten
+Sektoren — wer die Zeile freigibt, sieht damit sofort, worauf die Zahl beruht.
+Gerade wenn sie nicht stimmt, ist das der schnellste Weg, es zu merken.
+
+```
+node src/cli.js sheet work/x.measured.json --images work/bilder -o work/x.sheet.csv
+node src/cli.js sheet work/x.measured.json --image-map work/drive.json -o work/x.sheet.csv
+```
+
+`--images` sucht je Objekt nach `<adress-slug>.debug.png` — genau der Name, den
+`cv/run.py --out` schreibt. Daraus werden `file://`-Links: gut zum
+Selbstnachsehen, nutzlos in einem Sheet, das jemand anderes öffnet. Der Befehl
+sagt das auch.
+
+`--image-map` nimmt eine Zuordnung `{ "<Adresse|Objekt-ID|Slug>": "<URL>" }` und
+trägt echte Web-Links ein, etwa aus Google Drive. Einzelne Links lassen sich
+auch direkt am Objekt hinterlegen (`sveagLinks.kontrollbild`,
+`sveagLinks.aufmassblatt`); die schlagen jede Konvention.
+
+Ein Bild, das es nicht gibt, wird **nicht** verlinkt — ein toter Link sieht aus
+wie ein Beleg.
+
 **Das PDF** macht das Tool selbst (Knopf „PDF", A4 mit Karte und Tabelle) —
 und zwar in der Freigabe, wo ohnehin jemand draufschaut. Ein kopfloser
 Druckdurchlauf wäre möglich (Playwright), spart hier aber nichts.

@@ -135,8 +135,14 @@ Then, in the tool (`Aufmass_2026-08-21.html`):
 3. Measure. Then **Objekte → Export (JSON)** → save as `work/<kunde>.measured.json`
 
 ```bash
-node src/cli.js sheet work/<kunde>.measured.json -o work/<kunde>.sheet.csv
+node src/cli.js sheet work/<kunde>.measured.json \
+  --images work/bilder -o work/<kunde>.sheet.csv
 ```
+
+`--images` fills the `Kontrollbild` column by matching each object's address
+slug against `<slug>.debug.png` — the name `cv/run.py --out` writes. Those are
+`file://` links: fine on this machine, useless in a shared sheet. For that,
+upload the images and pass `--image-map` with `{"<address>": "<url>"}`.
 
 In Google Sheets: **Datei → Importieren → Hochladen**, separator comma.
 
