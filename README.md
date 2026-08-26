@@ -61,6 +61,33 @@ on single-run objects only returns the same three values, so the fit is stable.
 The tighter fit costs coverage: **16 of 85 objects get no proposal** instead of 1.
 Deliberate — a blank is honest, a wrong number is not.
 
+### Scored as geometry, not just as length
+
+Length agreement flatters the model: at Daumierstraße 20 the figure is 4 % out
+while the line sits on the **building facade**, metres from the pavement. With
+the sheets georeferenced, prediction and hand measurement can be compared as
+*geometry* — how much of the measured path the prediction covers (recall), and
+how much of the prediction lies on it (precision), over 35 objects:
+
+| tolerance | recall | precision | F1 |
+|---|---:|---:|---:|
+| 4 m | 61 % | **80 %** | 69 % |
+| 8 m | 71 % | **88 %** | 78 % |
+| 12 m | 75 % | 89 % | 81 % |
+
+**Precision is the good news**: when the model draws a line, it is almost always
+on pavement that really gets cleared. The weakness is recall — it *under-covers*
+rather than inventing. For Freigabe that is the easier failure: add what is
+missing, rather than check whether any of it is real.
+
+The 4 m figures were 50 % / 67 % until a systematic offset was corrected. The
+frontage lies on the parcel or building edge; the cleared pavement lies a few
+metres further out. Shifting the line toward the street — never past the street
+axis — was fitted on half the objects and scored on the other half:
+**F1 51 % → 63 %**, recall 46 → 58 %, precision 57 → 69 %. Length changes by
+2,6 %, so the sheet figures are untouched; this moves the line, it does not
+lengthen it.
+
 ### A second portfolio: Potsdam
 
 A separate list of 97 Potsdam objects (25 with stated dimensions) is a genuine
