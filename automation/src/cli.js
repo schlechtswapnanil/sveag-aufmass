@@ -211,13 +211,19 @@ async function main() {
     if (pc && !geo.label.includes(pc)) {
       warnungen.push(`PLZ-Abweichung: erwartet ${pc}, Treffer "${geo.label}"`);
     }
-    // Photon liefert bei einer unbekannten Hausnummer gern irgendein Objekt
-    // aus der Naehe - "Aurelienstrasse 4" wurde so zu "Malwerk". Taucht der
-    // Strassenname im Treffer gar nicht auf, ist es nicht dieselbe Adresse.
+    // Taucht der Strassenname im Treffer gar nicht auf, lohnt ein Blick -
+    // meist hat der Geocoder bei unbekannter Hausnummer etwas aus der Naehe
+    // gegriffen. Es kann aber auch stimmen: "Aurelienstrasse 4" loest zu
+    // "Malwerk" auf, und das ist tatsaechlich der Name des Objekts - die
+    // Handmessung der SVEAG fuehrt es genauso. Deshalb ein Hinweis, keine
+    // Ablehnung.
     const strasse = (address.match(/^[^0-9,]+/) || [''])[0].trim()
       .replace(/(stra(ss|ß)e|str\.?)$/i, '').trim();
     if (strasse.length >= 4 && !geo.label.toLowerCase().includes(strasse.toLowerCase())) {
-      warnungen.push(`Strassenname fehlt im Treffer: "${address}" -> "${geo.label}"`);
+      warnungen.push(
+        `Strassenname fehlt im Treffer: "${address}" -> "${geo.label}" ` +
+        '(kann ein Objektname sein - pruefen, nicht verwerfen)'
+      );
     }
     if (!leise) {
       console.error(`  Adresse: ${geo.label} (${geo.lat.toFixed(5)}, ${geo.lon.toFixed(5)}) · ${geo.state || 'Bundesland unbekannt'}` +

@@ -8,6 +8,9 @@ automation/work/
 *.xls
 *.docx
 *.pdf
+# Auch die Handmessungen: sie tragen die Adressen der Kundenobjekte.
+*.csv
+!automation/samples/*.csv
 
 # Aus dem gebauten Tool entnommen, jederzeit reproduzierbar:
 #   node cv/extract-vendor.js ../Aufmass_2026-08-21.html

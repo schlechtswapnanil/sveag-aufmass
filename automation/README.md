@@ -154,6 +154,7 @@ zwischen Straße und PLZ ist kein Betrug). Eine gedrehte Hausnummer fällt auf.
 | `src/schema-check.js` | schlanker Schema-Validator (statt ajv, damit dependency-frei) |
 | `src/to-aufmass.js` | Brief → Objekt im Format von `importJson()` des Tools |
 | `src/geocode.js` | Photon, gleiche Auswertung wie `geocode()` im Tool |
+| `src/frontage.js` | Gehweg aus Flurstück und Gebäudegrundriss |
 | `src/to-sheet.js` | gemessenes Objekt → Zeilen für die Tabelle |
 | `src/cli.js` | `validate`, `prepare` und `sheet` |
 | `samples/` | je eine Mail + Brief für Stufe A, B und C |
@@ -265,6 +266,52 @@ verfälschen:
 
 Eine Liste mit 95 Leipziger Häusern als „Anlage mit 95 Teilen" zu behandeln
 wäre schlicht falsch.
+
+## Gehweg aus Geometrie, nicht aus dem Bild
+
+Für den Gehweg — die Position, die in fast jeder Anfrage steht — ist das
+Luftbild der falsche Weg. Flurstück und Gebäudegrundriss sind vermessen, das
+Winterluftbild ist es nicht. `src/frontage.js` nimmt deshalb die
+Flurstücks- **und** die Gebäudekanten, die entlang der Straße verlaufen.
+
+```bash
+node tools/collect-geom.js work/gt.json work/x.import.json -o work/geom.json
+node tools/add-frontage.js work/x.import.json --geom work/geom.json -o work/x.measured.json
+```
+
+Das Ergebnis ist eine **Polylinie**, keine bloße Zahl: die Freigabe sieht, wo
+der Gehweg liegt, und kann das beurteilen. `isAssumption: true`.
+
+**Von zwei Kandidaten gewinnt der kleinere.** Die Ausreißer gehen fast immer
+nach oben — ein Gründerzeit-Karree als *ein* Flurstück (511 m statt 14 m), eine
+ganze Häuserzeile als *ein* OSM-Polygon (228 m statt 9 m). Ist einer der beiden
+Wege grob daneben, ist es der andere meist nicht.
+
+### Gemessen an 85 Handmessungen
+
+Die SVEAG hat die Leipziger Objektliste von Hand aufgemessen. Daran wurden die
+drei Parameter von `extractFrontage()` ausgerichtet — Rastersuche auf der einen
+Hälfte, Bewertung auf der anderen (`tools/fit.js`):
+
+| | Median-Abweichung | relativ | ±20 % | ±50 % |
+|---|---:|---:|---:|---:|
+| Ausgangswerte des Tools `{15, 30, 3}` | 4,5 m | 15 % | 54 % | 76 % |
+| angepasst `{10, 50, 8}` | **1,9 m** | 13 % | 58 % | 76 % |
+
+Das sind die Werte auf der **nicht** angepassten Hälfte; auf der Trainingshälfte
+sind es 69 % innerhalb ±20 %. Der Abstand zwischen beiden Zahlen ist die
+Anpassung an die Stichprobe — mit 85 Beispielen und drei Parametern ist mehr
+nicht zu holen.
+
+Über den gesamten Datensatz: Median-Abweichung **2,0 m** (9 %), 65 % innerhalb
+±20 %, 80 % innerhalb ±50 %.
+
+**Der engere Zuschnitt kostet Abdeckung**: 16 von 85 Objekten bekommen keinen
+Vorschlag mehr statt 1. Das ist gewollt. Keine Zahl ist ehrlicher als eine
+falsche, und die Lücke steht als `nicht gemessen` im Sheet.
+
+Wo Kataster und Gebäude weit auseinanderliegen, meldet `add-frontage.js` das —
+dort steckt fast immer ein Sammelflurstück oder ein Sammelpolygon dahinter.
 
 ## Der Rücklauf
 
