@@ -145,9 +145,13 @@ function briefToImportFile(brief, geos, opts) {
     version: 1,
     objects: list.map((geo, i) => {
       const obj = briefToObject(brief, geo, opts);
-      // Bei mehreren Objekten muss die Notiz sagen, welcher Teil der Anlage
-      // das ist - sonst sind drei gleich aussehende Aufmassblaetter im Umlauf.
-      if (list.length > 1) {
+      // "Teil n von m" gilt nur fuer EIN Objekt, das ueber mehrere
+      // Strassenzuege laeuft - dort teilen sich die Teile eine Gesamtflaeche.
+      // Eine Ausschreibung ueber 95 eigenstaendige Haeuser ist keine Anlage;
+      // dort ist jedes Objekt fuer sich, und eine Kundenangabe darf nicht auf
+      // "Teil 1" zusammengezogen werden.
+      const portfolio = (brief.object || {}).orderType === 'portfolio';
+      if (list.length > 1 && !portfolio) {
         obj.assumptionsNote =
           `Teil ${i + 1} von ${list.length} der Anlage. ${obj.assumptionsNote}`;
       }

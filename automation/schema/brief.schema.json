@@ -60,6 +60,11 @@
           "enum": ["einfamilienhaus", "doppelhaus", "reihenhaus", "mehrfamilienhaus", "gewerbe", "unbekannt"]
         },
         "units": { "type": ["integer", "null"], "minimum": 1, "description": "Wohneinheiten bei Mehrfamilienhaus" },
+        "orderType": {
+          "enum": ["einzelobjekt", "portfolio"],
+          "default": "einzelobjekt",
+          "description": "einzelobjekt = EIN Objekt, das ueber mehrere Strassenzuege laeuft (eine Wohnanlage, eine Gesamtflaeche). portfolio = viele eigenstaendige Objekte in einer Ausschreibung, jedes mit eigenem Umfang. Der Unterschied entscheidet, ob eine Kundenangabe fuer alle zusammen gilt oder je Objekt."
+        },
         "moreAddresses": {
           "type": "array",
           "description": "Weitere Adressen desselben Auftrags. Wohnungsgenossenschaften schreiben eine Wohnanlage ueber mehrere Strassenzuege aus (\"Erdkampsweg 83-87, Heschredder 98-104 sowie Hermann-Loens-Weg 1-51\"). Jede Adresse wird zu einem eigenen Objekt im Tool - eine einzige Koordinate deckt die Anlage nicht ab.",

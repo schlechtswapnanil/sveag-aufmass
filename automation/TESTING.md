@@ -171,6 +171,16 @@ Every row lands on `zu pruefen`. Nothing sets itself to freigegeben.
 
 ---
 
+## 5b. Growing one sheet over time
+
+```bash
+node src/cli.js sheet work/kunde.measured.json --append work/bestand.csv -o work/bestand.csv
+```
+
+Run it twice with the same input — the second run must append **0 rows**. Then
+mark a row `freigegeben` in the CSV and run again: the mark must survive, and
+any changed measurement must be *reported*, not silently written over.
+
 ## 6. The aerial step
 
 ```bash

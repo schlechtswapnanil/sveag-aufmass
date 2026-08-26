@@ -3,7 +3,7 @@ const assert = require('node:assert');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const { sheetRows, rowsForObject, toCsv, COLUMNS, deviationPct } = require('../src/to-sheet.js');
+const { sheetRows, rowsForObject, toCsv, fromCsv, mergeRows, COLUMNS, deviationPct } = require('../src/to-sheet.js');
 
 const SAMPLES = path.join(__dirname, '..', 'samples');
 const brief = JSON.parse(fs.readFileSync(path.join(SAMPLES, 'tier-c-flaechen.brief.json'), 'utf8'));
@@ -157,4 +157,65 @@ test('am Objekt hinterlegte Links schlagen jede Konvention', () => {
   const row = rowsForObject(obj, { imageMap: { [obj.address]: 'https://drive/anders' } })[0];
   assert.strictEqual(row.Kontrollbild, 'https://drive/x');
   assert.strictEqual(row.Aufmassblatt, 'https://drive/y');
+});
+
+// --- Portfolio vs. Einzelobjekt ----------------------------------------
+
+test('beim Portfolio gilt keine Kundenangabe fuer "alle zusammen"', () => {
+  // Eine Ausschreibung ueber viele eigenstaendige Haeuser hat keine
+  // Gesamtflaeche - jedes Objekt steht fuer sich. Fehlt der Teil-Vermerk,
+  // darf die Kundenangabe auch nicht auf Teil 1 zusammengezogen werden.
+  const ohneTeil = objekt({ lines: [linie('gehweg', 30)] });   // keine "Teil n von m"-Notiz
+  const rows = rowsForObject(ohneTeil);
+  assert.ok(rows.every((r) => r.Teil === ''));
+  assert.strictEqual(rows.find((r) => r.Kategorie === 'gehweg').Kundenangabe, 714.3);
+  assert.ok(rows.every((r) => !/Gesamtanlage/.test(r.Hinweis)));
+});
+
+// --- Fortschreiben ------------------------------------------------------
+
+test('Zeilen-ID ist stabil und haengt nicht an der Objekt-ID', () => {
+  // prepare wuerfelt bei jedem Lauf neue Objekt-IDs. Haenge die Zeilen-ID
+  // daran, verdoppelt sich der Bestand bei jedem Durchlauf.
+  const a = objekt({ lines: [] }); a.id = 'id-erster-lauf';
+  const b = objekt({ lines: [] }); b.id = 'id-zweiter-lauf';
+  assert.deepStrictEqual(rowsForObject(a).map((r) => r.ID), rowsForObject(b).map((r) => r.ID));
+});
+
+test('derselbe Lauf zweimal verdoppelt nichts', () => {
+  const rows = rowsForObject(objekt({ lines: [linie('gehweg', 30)] }));
+  const { rows: zusammen, angehaengt } = mergeRows(rows, rows);
+  assert.strictEqual(angehaengt.length, 0);
+  assert.strictEqual(zusammen.length, rows.length);
+});
+
+test('Handarbeit im Bestand ueberlebt einen erneuten Lauf', () => {
+  const rows = rowsForObject(objekt({ lines: [linie('gehweg', 30)] }));
+  const bestand = rows.map((r) => ({ ...r }));
+  bestand[0].Status = 'freigegeben';
+  bestand[0].Gemessen_m = '12';          // von Hand korrigiert
+
+  const { rows: zusammen, abweichungen } = mergeRows(bestand, rows);
+  assert.strictEqual(zusammen[0].Status, 'freigegeben', 'Freigabe darf nicht verlorengehen');
+  assert.strictEqual(zusammen[0].Gemessen_m, '12', 'Korrektur darf nicht ueberschrieben werden');
+  // Aber die Abweichung muss gemeldet werden - stillschweigen waere schlimmer.
+  assert.ok(abweichungen.some((a) => a.feld === 'Gemessen_m' && a.alt === '12'));
+});
+
+test('eine zweite Anfrage haengt an, statt zu ersetzen', () => {
+  const a = rowsForObject(objekt({ lines: [], address: 'Aweg 1, 04177 Leipzig' }));
+  const b = rowsForObject(objekt({ lines: [], address: 'Bweg 2, 22335 Hamburg' }));
+  const { rows: zusammen, angehaengt } = mergeRows(a, b);
+  assert.strictEqual(angehaengt.length, b.length);
+  assert.strictEqual(zusammen.length, a.length + b.length);
+  assert.strictEqual(new Set(zusammen.map((r) => r.ID)).size, zusammen.length);
+});
+
+test('CSV überlebt den Rundlauf, auch mit Komma und Anführungszeichen', () => {
+  const rows = rowsForObject(objekt({ lines: [linie('gehweg', 30)] }));
+  rows[0].Hinweis = 'Er sagte "ja", dann "nein"';
+  const zurueck = fromCsv(toCsv(rows));
+  assert.strictEqual(zurueck.length, rows.length);
+  assert.strictEqual(zurueck[0].Hinweis, 'Er sagte "ja", dann "nein"');
+  assert.strictEqual(zurueck[0].ID, rows[0].ID);
 });

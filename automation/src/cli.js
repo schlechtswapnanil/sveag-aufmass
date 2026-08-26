@@ -5,6 +5,7 @@
 //   node src/cli.js prepare  <brief.json> [--source <quelltext.txt>] [-o <import.json>]
 //   node src/cli.js sheet    <export.json> [-o <zeilen.csv>]
 //                            [--images <verzeichnis>] [--image-map <map.json>]
+//                            [--append <sheet.csv>]
 //
 // Der Quelltext ist alles, was beim Extrahieren vorlag: Betreffzeile,
 // Mailtext und zitierte Vorgaenger-Nachrichten. Er muss vollstaendig sein -
@@ -16,6 +17,8 @@
 //           Aufmass-Tool unter "Objekte -> Import (JSON)" geladen wird.
 // sheet     nimmt den Export des Tools NACH dem Messen und schreibt eine
 //           Zeile je Position - Kundenangabe und Messung nebeneinander.
+//           --append schreibt einen bestehenden Bestand fort, ohne Zeilen zu
+//           verdoppeln und ohne Freigabe-Vermerke zu ueberschreiben.
 //           --image-map traegt Web-Links zu den Kontrollbildern ein (Drive);
 //           --images verlinkt stattdessen lokale Dateien per file:// - das
 //           taugt zum Selbstnachsehen, nicht zum Verschicken.
@@ -24,16 +27,17 @@ const fs = require('node:fs');
 const { validateBrief, classifyTier, TIER_LABEL } = require('./brief.js');
 const { briefToImportFile, allAddresses, geocodeQuery, categoriesToMeasure } = require('./to-aufmass.js');
 const { geocode } = require('./geocode.js');
-const { sheetRows, toCsv, COLUMNS } = require('./to-sheet.js');
+const { sheetRows, toCsv, fromCsv, mergeRows, COLUMNS } = require('./to-sheet.js');
 
 function parseArgs(argv) {
   const [command, briefPath, ...rest] = argv;
-  const opts = { command, briefPath, email: null, out: null, images: null, imageMap: null };
+  const opts = { command, briefPath, email: null, out: null, images: null, imageMap: null, append: null };
   for (let i = 0; i < rest.length; i++) {
     if (rest[i] === '--source' || rest[i] === '--email') opts.email = rest[++i];
     else if (rest[i] === '-o' || rest[i] === '--out') opts.out = rest[++i];
     else if (rest[i] === '--images') opts.images = rest[++i];
     else if (rest[i] === '--image-map') opts.imageMap = rest[++i];
+    else if (rest[i] === '--append') opts.append = rest[++i];
     else throw new Error(`Unbekannte Option: ${rest[i]}`);
   }
   return opts;
@@ -108,10 +112,30 @@ async function main() {
       console.error('    Sheet die Bilder hochladen und --image-map verwenden.');
     }
     console.error('  Alle Zeilen stehen auf "zu pruefen" - die Freigabe setzt den Status.');
-    const csv = toCsv(rows);
+    let ausgabe = rows;
+    if (opts.append) {
+      if (!fs.existsSync(opts.append)) {
+        console.error(`  Bestand ${opts.append} existiert noch nicht - er wird neu angelegt.`);
+      } else {
+        const bestehend = fromCsv(fs.readFileSync(opts.append, 'utf8'));
+        const { rows: zusammen, angehaengt, abweichungen } = mergeRows(bestehend, rows);
+        console.error(`  Bestand: ${bestehend.length} Zeile(n), davon ${rows.length - angehaengt.length} schon bekannt.`);
+        console.error(`  ${angehaengt.length} Zeile(n) neu angehaengt.`);
+        if (abweichungen.length) {
+          console.error(`  ! ${abweichungen.length} bekannte Zeile(n) haben jetzt andere Werte.`);
+          console.error('    Nicht ueberschrieben - vorhandene Zeilen bleiben, wie die Freigabe sie hinterlassen hat:');
+          for (const a of abweichungen.slice(0, 10)) {
+            console.error(`      ${a.objekt} · ${a.position} · ${a.feld}: "${a.alt}" -> "${a.neu}"`);
+          }
+          if (abweichungen.length > 10) console.error(`      … und ${abweichungen.length - 10} weitere`);
+        }
+        ausgabe = zusammen;
+      }
+    }
+    const csv = toCsv(ausgabe);
     if (opts.out) {
       fs.writeFileSync(opts.out, csv);
-      console.error(`✔ geschrieben: ${opts.out} - in Google Sheets über Datei → Importieren einlesen.`);
+      console.error(`✔ geschrieben: ${opts.out} (${ausgabe.length} Zeile(n)) - in Google Sheets über Datei → Importieren einlesen.`);
     } else {
       process.stdout.write(csv);
     }
@@ -179,6 +203,14 @@ async function main() {
     const pc = (address.match(/\b(\d{5})\b/) || [])[1] || brief.object.postcode;
     if (pc && !geo.label.includes(pc)) {
       warnungen.push(`PLZ-Abweichung: erwartet ${pc}, Treffer "${geo.label}"`);
+    }
+    // Photon liefert bei einer unbekannten Hausnummer gern irgendein Objekt
+    // aus der Naehe - "Aurelienstrasse 4" wurde so zu "Malwerk". Taucht der
+    // Strassenname im Treffer gar nicht auf, ist es nicht dieselbe Adresse.
+    const strasse = (address.match(/^[^0-9,]+/) || [''])[0].trim()
+      .replace(/(stra(ss|ß)e|str\.?)$/i, '').trim();
+    if (strasse.length >= 4 && !geo.label.toLowerCase().includes(strasse.toLowerCase())) {
+      warnungen.push(`Strassenname fehlt im Treffer: "${address}" -> "${geo.label}"`);
     }
     if (!leise) {
       console.error(`  Adresse: ${geo.label} (${geo.lat.toFixed(5)}, ${geo.lon.toFixed(5)}) · ${geo.state || 'Bundesland unbekannt'}`);

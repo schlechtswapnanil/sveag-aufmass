@@ -209,6 +209,39 @@ der 55. Adresse in 503 und die halbe Liste fehlt, ohne dass es auffällt.
 Adressen, die trotzdem nicht auflösen, werden am Ende einzeln benannt und
 gehören von Hand ins Tool.
 
+## Fortschreiben statt überschreiben
+
+Der gedachte Ablauf ist: Anfragen kommen laufend herein, jede läuft durch die
+Kette, und die Zeilen sammeln sich in **einem** Bestand.
+
+```bash
+node src/cli.js sheet work/kunde.measured.json --append work/bestand.csv -o work/bestand.csv
+```
+
+Jede Zeile trägt eine `ID` aus Objekt + Position — bewusst **nicht** aus der
+Objekt-ID, denn die würfelt `prepare` bei jedem Lauf neu. Damit gilt:
+
+* Derselbe Lauf zweimal verdoppelt nichts.
+* Eine zweite Anfrage hängt an.
+* Eine Zeile, die schon im Bestand steht, wird **nicht überschrieben**. Wer sie
+  freigegeben oder von Hand korrigiert hat, verliert das nicht.
+* Weicht ein neuer Messwert vom bestehenden ab, wird das gemeldet — die
+  Entscheidung gehört zur Freigabe, nicht ins Skript.
+
+## Einzelobjekt oder Portfolio
+
+`object.orderType` unterscheidet zwei Fälle, die sich sonst gegenseitig
+verfälschen:
+
+* `einzelobjekt` — **ein** Objekt über mehrere Straßenzüge. Die Ausschreibung
+  nennt eine Gesamtfläche; die Zeilen tragen „Teil n von m", und die
+  Kundenangabe steht nur an Teil 1, sonst zählt die Spaltensumme mehrfach.
+* `portfolio` — **viele eigenständige** Objekte in einer Ausschreibung, jedes
+  mit eigenem Umfang. Kein Teil-Vermerk, keine Zusammenziehung.
+
+Eine Liste mit 95 Leipziger Häusern als „Anlage mit 95 Teilen" zu behandeln
+wäre schlicht falsch.
+
 ## Der Rücklauf
 
 `sheet` nimmt den Export des Tools **nach** dem Messen und schreibt eine Zeile

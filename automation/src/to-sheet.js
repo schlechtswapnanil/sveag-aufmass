@@ -9,6 +9,7 @@
 // Flaechen auf, und so muss das Angebot sie zurueckgeben.
 
 const path = require('node:path');
+const crypto = require('node:crypto');
 const { sectorLabel, formatMeasurement } = require('./to-aufmass.js');
 const { TIER_LABEL } = require('./brief.js');
 
@@ -29,6 +30,7 @@ function model() {
 }
 
 const COLUMNS = [
+  'ID',
   'Datum', 'Objekt', 'Teil', 'Bundesland', 'Stufe',
   'Position', 'Kategorie',
   'Kundenangabe', 'Einheit', 'Gemessen_m', 'Abweichung_%',
@@ -76,6 +78,17 @@ function imageLink(obj, { imageMap, imagesDir } = {}) {
 
 function round1(n) {
   return Math.round(n * 10) / 10;
+}
+
+// Stabile Zeilen-Kennung aus Objekt und Position.
+//
+// Sie muss ueber Laeufe hinweg gleich bleiben, sonst verdoppelt jeder erneute
+// Lauf die Zeilen und die Freigabe-Vermerke haengen an Karteileichen. Bewusst
+// NICHT aus der Objekt-ID gebildet: die wird bei jedem `prepare` neu gewuerfelt.
+// Adresse plus Position ist das, was fachlich eine Zeile ausmacht.
+function rowId(address, position, category) {
+  const key = [address, position, category].map((x) => String(x || '').trim().toLowerCase()).join('|');
+  return crypto.createHash('sha1').update(key).digest('hex').slice(0, 10);
 }
 
 // Gemessene Meter je Kategorie, aus den Linien des Objekts.
@@ -176,9 +189,11 @@ function rowsForObject(obj, opts = {}) {
       hinweise.push('Kundenangabe in m², Messung in m - kein direkter Vergleich');
     }
 
+    const position = sectorLabel(sector);
     rows.push({
       ...base,
-      Position: sectorLabel(sector),
+      ID: rowId(obj.address, position, sector.category),
+      Position: position,
       Kategorie: sector.category,
       Kundenangabe: istFolgeteil ? '' : statedValue(sector),
       Einheit: istFolgeteil ? '' : unitOf(sector),
@@ -196,6 +211,7 @@ function rowsForObject(obj, opts = {}) {
     if (seenCategories.has(category)) continue;
     rows.push({
       ...base,
+      ID: rowId(obj.address, category, category),
       Position: category,
       Kategorie: category,
       Kundenangabe: '',
@@ -216,6 +232,57 @@ function sheetRows(state, opts = {}) {
   return (state.objects || []).flatMap((obj) => rowsForObject(obj, opts));
 }
 
+// --- Fortschreiben statt ueberschreiben -------------------------------
+
+// Sehr kleiner CSV-Leser: genau das Format, das toCsv() schreibt.
+function fromCsv(text, { separator = ',' } = {}) {
+  const src = text.replace(/^\uFEFF/, '');
+  const rows = [];
+  let row = [], cell = '', inQuotes = false;
+  for (let i = 0; i < src.length; i++) {
+    const c = src[i];
+    if (inQuotes) {
+      if (c === '"' && src[i + 1] === '"') { cell += '"'; i++; }
+      else if (c === '"') inQuotes = false;
+      else cell += c;
+    } else if (c === '"') inQuotes = true;
+    else if (c === separator) { row.push(cell); cell = ''; }
+    else if (c === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; }
+    else if (c !== '\r') cell += c;
+  }
+  if (cell || row.length) { row.push(cell); rows.push(row); }
+  if (rows.length === 0) return [];
+  const head = rows[0];
+  return rows.slice(1)
+    .filter((r) => r.some((v) => v !== ''))
+    .map((r) => Object.fromEntries(head.map((h, i) => [h, r[i] ?? ''])));
+}
+
+// Neue Zeilen in einen bestehenden Bestand einarbeiten.
+//
+// Zwei Regeln, beide zum Schutz der Handarbeit:
+//   * Eine bereits vorhandene ID wird NICHT ueberschrieben. Wer eine Zeile
+//     freigegeben oder korrigiert hat, verliert das nicht, nur weil die
+//     Anfrage noch einmal durchlief.
+//   * Weicht ein neuer Messwert vom bestehenden ab, wird das gemeldet statt
+//     still uebernommen - die Entscheidung gehoert zur Freigabe.
+function mergeRows(bestehend, neu) {
+  const byId = new Map(bestehend.map((r) => [r.ID, r]));
+  const angehaengt = [];
+  const abweichungen = [];
+  for (const r of neu) {
+    const alt = byId.get(r.ID);
+    if (!alt) { angehaengt.push(r); byId.set(r.ID, r); continue; }
+    for (const feld of ['Gemessen_m', 'Kundenangabe']) {
+      if (String(alt[feld] ?? '') !== String(r[feld] ?? '')) {
+        abweichungen.push({ id: r.ID, objekt: r.Objekt, position: r.Position,
+                            feld, alt: alt[feld], neu: r[feld] });
+      }
+    }
+  }
+  return { rows: bestehend.concat(angehaengt), angehaengt, abweichungen };
+}
+
 function csvCell(v) {
   const s = v == null ? '' : String(v);
   return /[",;\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
@@ -230,6 +297,6 @@ function toCsv(rows, { separator = ',', bom = true } = {}) {
 }
 
 module.exports = {
-  COLUMNS, sheetRows, rowsForObject, toCsv, deviationPct, measuredByCategory,
-  slugFor, imageLink,
+  COLUMNS, sheetRows, rowsForObject, toCsv, fromCsv, mergeRows, rowId,
+  deviationPct, measuredByCategory, slugFor, imageLink,
 };
