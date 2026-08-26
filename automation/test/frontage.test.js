@@ -63,3 +63,27 @@ test('die angepassten Parameter sind die dokumentierten', () => {
   // sonst steht im README eine Genauigkeit, die nicht mehr gilt.
   assert.deepStrictEqual(FITTED, { maxDistM: 10, maxAngleDeg: 50, minLenM: 8 });
 });
+
+// --- Verlaesslichkeit ---------------------------------------------------
+
+test('weichen die Quellen stark ab, wird das als wenig verlaesslich gemeldet', () => {
+  // An 69 Handmessungen: stimmen Kataster und Gebaeude auf Faktor < 2 ueberein,
+  // liegen 69 % innerhalb ±20 %; darueber nur gut 40 %. Anders als der
+  // fehlende Zuweg ist das vorher erkennbar - also gehoert es in die Zeile.
+  const gross = [[0, 0], [200 * M, 0], [200 * M, 200 * M], [0, 200 * M], [0, 0]];
+  const strasseLang = [[[-6 * M, -5 * M], [-6 * M, 210 * M]]];
+
+  const weit = predictGehweg({ parcelRings: [gross], buildingRing: quadrat, streets: strasseLang });
+  assert.strictEqual(weit.confidence, 'niedrig');
+  assert.ok(weit.spreadFactor >= 2, `Faktor ${weit.spreadFactor}`);
+
+  const einig = predictGehweg({ parcelRings: [quadrat], buildingRing: quadrat, streets: strasseSued });
+  assert.strictEqual(einig.confidence, 'hoch');
+  assert.strictEqual(einig.spreadFactor, 1);
+});
+
+test('bei nur einer Quelle gilt der Vorschlag als verlaesslich', () => {
+  const p = predictGehweg({ parcelRings: [quadrat], buildingRing: null, streets: strasseSued });
+  assert.strictEqual(p.confidence, 'hoch');
+  assert.strictEqual(p.spreadFactor, 1);
+});

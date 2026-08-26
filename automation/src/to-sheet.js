@@ -176,6 +176,14 @@ function rowsForObject(obj, opts = {}) {
     seenCategories.add(sector.category);
 
     const hinweise = [];
+    // Verlaesslichkeit des Gehweg-Vorschlags aus der Quellen-Uebereinstimmung.
+    // Nur an der Gehweg-Zeile - fuer andere Kategorien sagt sie nichts.
+    const fr = obj.sveagFrontage;
+    if (sector.category === 'gehweg' && fr && fr.confidence === 'niedrig') {
+      hinweise.push(
+        `Vorschlag wenig verlaesslich: Kataster und Gebaeude weichen um Faktor ${fr.spreadFactor} ab`
+      );
+    }
     if (istFolgeteil) {
       hinweise.push(`Kundenangabe gilt fuer die Gesamtanlage und steht an Teil 1/${teil[2]}`);
     }

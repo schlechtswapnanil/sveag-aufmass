@@ -39,6 +39,20 @@ neither a parcel nor a building edge, so vector data cannot reach it — and it 
 the two groups (median 10,9 m vs 12,8 m, every threshold yields more false alarms
 than catches).
 
+**The model can flag its own weak cases — partly.** Where the cadastral parcel
+and the OSM building outline disagree by more than a factor of two, accuracy
+drops sharply, and that is visible *before* comparing to anything:
+
+| Kataster vs Gebäude | Objects | within ±20 % |
+|---|---:|---:|
+| agree within 2× | 55 (80 %) | **69 %** |
+| disagree 2–5× | 9 | 44 % |
+| disagree >5× | 5 | 40 % |
+
+Those rows carry `Vorschlag wenig verlaesslich` in the sheet. Taking the smaller
+value stays right even there — with the larger one, the median error at >5×
+disagreement is 1340 %.
+
 Tuning helped: `extractFrontage()`'s three parameters went from the tool's
 `{15, 30, 3}` to `{10, 50, 8}`, fitted by grid search on one half of the data and
 scored on the other — median error 4,5 m → **1,9 m** on the held-out half. Refitting

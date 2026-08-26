@@ -48,20 +48,19 @@ for (const obj of state.objects || []) {
     }))
   );
   obj.sveagFrontage = {
-    lengthM: p.lengthM, source: p.source, spreadM: p.spreadM, params: FITTED,
+    lengthM: p.lengthM, source: p.source, spreadM: p.spreadM,
+    spreadFactor: p.spreadFactor, confidence: p.confidence, params: FITTED,
   };
   gesetzt++;
-  // Weichen Kataster und Gebaeude stark ab, steckt meist ein Sammelflurstueck
-  // oder ein Sammelpolygon dahinter - dann ist die kleinere Zahl zwar die
-  // bessere, aber nicht unbedingt die richtige.
-  if (p.spreadM > 3 * p.lengthM) weitAuseinander++;
+  if (p.confidence === 'niedrig') weitAuseinander++;
 }
 
 console.error(`✔ Gehweg-Vorschlag an ${gesetzt} von ${state.objects.length} Objekt(en)`);
 if (ohne) console.error(`  ! ${ohne} ohne Vorschlag - kurze oder fehlende Front, von Hand messen`);
 if (weitAuseinander) {
-  console.error(`  ! ${weitAuseinander} mit grossem Abstand zwischen Kataster und Gebaeude`);
-  console.error('    (Sammelflurstueck oder Sammelpolygon) - dort besonders genau pruefen');
+  console.error(`  ! ${weitAuseinander} mit geringer Verlaesslichkeit (Kataster und Gebaeude`);
+  console.error('    weichen um mehr als das Doppelte ab). Dort trifft die Schaetzung nur');
+  console.error('    in gut 4 von 10 Faellen auf ±20 %, sonst in knapp 7 von 10.');
 }
 console.error('  Alle Linien sind isAssumption: true.');
 

@@ -64,16 +64,29 @@ function predictGehweg({ parcelRings, buildingRing, streets }, opts = FITTED) {
   if (!kandidaten.length) return null;
   kandidaten.sort((a, b) => a.lengthM - b.lengthM);
   const gewaehlt = kandidaten[0];
+  const groesster = kandidaten[kandidaten.length - 1];
+
+  // Wie weit die beiden Wege auseinanderliegen, ist ein brauchbarer Hinweis
+  // auf die Verlaesslichkeit - und anders als der fehlende Zuweg ist er
+  // vorher erkennbar. Ueber 69 Objekte mit Handmessung:
+  //
+  //   Faktor < 2   55 Objekte   69 % innerhalb ±20 %
+  //   Faktor 2-5    9 Objekte   44 %
+  //   Faktor > 5    5 Objekte   40 %
+  //
+  // Das kleinere zu nehmen bleibt trotzdem richtig: mit dem groesseren Wert
+  // faellt der Median bei Faktor > 5 auf 1340 % Abweichung, weil dort ein
+  // Sammelflurstueck oder ein Sammelpolygon dahintersteckt.
+  const faktor = gewaehlt.lengthM > 0 ? groesster.lengthM / gewaehlt.lengthM : 1;
   return {
     lengthM: Math.round(gewaehlt.lengthM * 10) / 10,
     source: gewaehlt.quelle,
     chains: gewaehlt.chains,
-    // Wie weit die beiden Wege auseinanderliegen. Ein grosser Abstand heisst
-    // nicht "falsch", aber "besonders genau hinsehen" - dort steckt fast
-    // immer ein Sammelflurstueck oder ein Sammelpolygon dahinter.
     spreadM: kandidaten.length > 1
-      ? Math.round((kandidaten[kandidaten.length - 1].lengthM - gewaehlt.lengthM) * 10) / 10
+      ? Math.round((groesster.lengthM - gewaehlt.lengthM) * 10) / 10
       : 0,
+    spreadFactor: Math.round(faktor * 10) / 10,
+    confidence: faktor < 2 ? 'hoch' : 'niedrig',
   };
 }
 
