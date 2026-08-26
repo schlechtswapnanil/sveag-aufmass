@@ -213,6 +213,35 @@ sondern der sachlich richtige.
 sind im Orthophoto sichtbar" wurde geschlossen, ein Bildmodell auf den
 verorteten Blättern sei der Weg nach vorn. Die Messung sagt das Gegenteil.
 
+## Gegenprüfung auf der Karte
+
+`tools/vergleichsbild.py` legt Vorhersage und Handmessung zusammen aufs
+Luftbild — gelb die gemessene Strecke aus dem verorteten Blatt, cyan die
+Vorhersage, weiß das Flurstück, blau der OSM-Grundriss, rot der
+Geocoder-Punkt. Zahlen sagen nicht, *warum* eine Vorhersage danebenliegt.
+
+**Der Geocoder ist nicht die Fehlerquelle.** Abstand zwischen Geocoder-Punkt
+und tatsächlich gemessenem Gehweg über 39 Objekte: Median 9,4 m, größter Wert
+16 m, keiner über 25 m. Der Versatz entspricht dem Abstand Gebäudemitte →
+Straßenkante, ist also genau das Erwartete und keine Fehltreffer.
+
+Zwei Bilder erklären den Rest:
+
+* **Daumierstraße 20** (4 % Abweichung): Die Vorhersage liegt auf der
+  *Gebäudefassade*, die Handmessung ein paar Meter weiter auf dem *Gehweg*.
+  Gleiche Länge, versetzte Lage — die Zahl stimmt, weil die Grundstücksbreite
+  dieselbe ist.
+* **Heinrich-Heine-Straße 15** (85 % Abweichung): ein **Eckgrundstück**. Die
+  Handmessung läuft über *beide* Straßenfronten, zusammen 64 m. Die Vorhersage
+  ist ein 9-m-Stummel an einer Gebäudeecke — die Minimum-Regel hat das kleine
+  Gebäude statt des großen Flurstücks gewählt.
+
+Der zweite Fall sieht nach einer Regel aus, ist aber keine: „Eckgrundstück →
+Kataster" ergibt über alle Objekte **59 %** statt 64 % innerhalb ±20 %. Und
+Kataster ist bei einer Straßenrichtung in 16 von 27 Fällen besser, bei zweien
+in 10 von 17 — kein Zusammenhang. Siebte geprüfte Regel, siebtes Mal kein
+Gewinn.
+
 ## Grenzen
 
 - **Nur 9 Bundesländer** haben Luftbild *und* Flurstück offen: BW, BB, HH, MV,
